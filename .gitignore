@@ -232,3 +232,12 @@ __pycache__/
 
 # Jupyter
 .ipynb_checkpoints/
+# ---- CropGuard project rules ----
+!.env.example
+backend/media/
+backend/staticfiles/
+ml/runs/
+ml/datasets/
+.vscode/
+.idea/
+.DS_Store
