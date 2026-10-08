@@ -1,0 +1,33 @@
+/* Design tokens: change colours/type here and the whole site follows. */
+:root {
+  --leaf: #1e4d32;        /* primary: maize leaf */
+  --leaf-deep: #153a25;
+  --leaf-soft: #e3eee3;
+  --kernel: #e8b931;      /* accent: maize kernel (buttons on dark, highlights) */
+  --soil: #2b2118;        /* text */
+  --soil-soft: #5c5148;   /* secondary text */
+  --mist: #f3f6f1;        /* page background */
+  --paper: #ffffff;
+  --line: #d5ddd0;
+  --blight: #b3412b;      /* disease / error */
+  --blight-soft: #f7e4df;
+
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+
+  --step--1: 0.875rem;
+  --step-0: 1rem;
+  --step-1: 1.25rem;
+  --step-2: 1.6rem;
+  --step-3: clamp(2rem, 4.5vw, 3.2rem);
+
+  --space-1: 0.5rem;
+  --space-2: 1rem;
+  --space-3: 1.5rem;
+  --space-4: 2.5rem;
+  --space-5: 4rem;
+
+  --radius: 10px;
+  --radius-sm: 6px;
+  --container: 68rem;
+}

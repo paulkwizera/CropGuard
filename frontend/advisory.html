@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <title>Weather advice · CropGuard</title>
+</head>
+<body>
+  <header id="site-header"></header>
+  <main class="page">
+    <div class="container stack">
+      <div class="page-head"><h1>Weather advice</h1><p class="muted">Next 24 hours for your area, with advice on irrigation and spraying.</p></div>
+      <form class="form card" id="advisory-form">
+        <div id="form-error" class="form-error hidden" role="alert"></div>
+        <div class="field"><label for="city">District or town</label><input id="city" name="city" placeholder="e.g. Musanze, Huye, Kigali" required></div>
+        <div class="field"><label for="language">Language</label>
+          <select id="language"><option value="rw">Kinyarwanda</option><option value="en">English</option><option value="fr">Français</option></select></div>
+        <button class="btn" type="submit">Get advice</button>
+      </form>
+      <section id="advisory-result" class="hidden stack" aria-live="polite">
+        <div class="card stack"><h2>Advice for <span id="out-city"></span></h2><p class="advice-text" id="out-advice"></p></div>
+        <div class="card stack">
+          <h3>Forecast</h3><p class="muted" id="out-totals"></p>
+          <div class="table-wrap"><table><thead><tr><th>Time</th><th>Temp</th><th>Humidity</th><th>Sky</th><th>Rain</th></tr></thead><tbody id="out-rows"></tbody></table></div>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer"><div class="container">CropGuard · maize disease detection for Rwandan farmers</div></footer>
+  <script type="module" src="js/pages/advisory.js"></script>
+</body>
+</html>

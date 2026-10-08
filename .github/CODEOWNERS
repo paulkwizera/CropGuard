@@ -1,0 +1,6 @@
+# Each area has an owner who reviews changes to it.
+# Replace the handles with real GitHub usernames.
+/frontend/   @paulkwizera
+# /backend/  @TEAMMATE_GITHUB_USERNAME
+# /ml/       @paulkwizera
+/docs/       @paulkwizera

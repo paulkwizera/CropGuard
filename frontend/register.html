@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <title>Create account · CropGuard</title>
+</head>
+<body>
+  <header id="site-header"></header>
+  <main class="page">
+    <div class="container">
+      <div class="page-head"><h1>Create your account</h1></div>
+      <form class="form card" id="register-form" novalidate>
+        <div id="form-error" class="form-error hidden" role="alert"></div>
+        <div class="field"><label for="username">Username</label><input id="username" name="username" autocomplete="username" required></div>
+        <div class="field"><label for="password">Password (8+ characters)</label><input id="password" name="password" type="password" autocomplete="new-password" minlength="8" required></div>
+        <div class="field"><label for="district">District</label><input id="district" name="district" placeholder="e.g. Musanze"></div>
+        <div class="field"><label for="preferred_language">Language for advice</label>
+          <select id="preferred_language" name="preferred_language">
+            <option value="rw">Kinyarwanda</option><option value="en">English</option><option value="fr">Français</option>
+          </select></div>
+        <button class="btn" type="submit">Create account</button>
+        <p class="muted">Already registered? <a href="login.html">Sign in</a></p>
+      </form>
+    </div>
+  </main>
+  <footer class="site-footer"><div class="container">CropGuard · maize disease detection for Rwandan farmers</div></footer>
+  <script type="module" src="js/pages/register.js"></script>
+</body>
+</html>
