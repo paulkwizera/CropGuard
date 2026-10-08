@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <title>My checks · CropGuard</title>
+</head>
+<body>
+  <header id="site-header"></header>
+  <main class="page">
+    <div class="container">
+      <div class="page-head row" style="justify-content:space-between">
+        <h1>My checks</h1><a class="btn" href="detect.html">Check a plant</a>
+      </div>
+      <div id="history-list" class="grid" aria-live="polite"></div>
+      <div id="history-empty" class="empty hidden"><p>You have not checked any plants yet.</p><a class="btn" href="detect.html">Check your first plant</a></div>
+    </div>
+  </main>
+  <footer class="site-footer"><div class="container">CropGuard · maize disease detection for Rwandan farmers</div></footer>
+  <script type="module" src="js/pages/history.js"></script>
+</body>
+</html>

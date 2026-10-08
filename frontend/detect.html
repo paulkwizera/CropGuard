@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <title>Check a plant · CropGuard</title>
+</head>
+<body>
+  <header id="site-header"></header>
+  <main class="page">
+    <div class="container">
+      <div class="page-head"><h1>Check a maize plant</h1><p class="muted">One leaf per photo works best. Use daylight and keep the leaf in focus.</p></div>
+
+      <section id="upload-panel">
+        <label class="dropzone" id="dropzone" for="file-input">
+          <strong>Choose or drop a photo</strong>
+          <span class="muted">JPG or PNG, up to 8 MB</span>
+        </label>
+        <input class="visually-hidden" id="file-input" type="file" accept="image/*">
+      </section>
+
+      <section id="preview-panel" class="hidden stack">
+        <div class="preview"><img id="preview-img" alt="Selected maize leaf"></div>
+        <div class="row">
+          <button class="btn" id="analyze-btn" type="button">Check this plant</button>
+          <button class="btn btn--ghost" id="reset-btn" type="button">Choose another photo</button>
+        </div>
+      </section>
+
+      <section id="result-panel" class="hidden result-layout" aria-live="polite">
+        <div class="preview"><canvas id="result-canvas"></canvas></div>
+        <div class="card stack">
+          <div id="result-summary"></div>
+          <div id="advice-box" class="hidden stack">
+            <h3>Treatment advice</h3>
+            <p class="advice-text" id="advice-text"></p>
+          </div>
+          <div class="row hidden" id="advice-controls">
+            <div class="field"><label for="advice-lang">Language</label>
+              <select id="advice-lang"><option value="rw">Kinyarwanda</option><option value="en">English</option><option value="fr">Français</option></select></div>
+            <button class="btn" id="advice-btn" type="button">Get treatment advice</button>
+          </div>
+          <button class="btn btn--ghost" id="again-btn" type="button">Check another plant</button>
+        </div>
+      </section>
+    </div>
+  </main>
+  <footer class="site-footer"><div class="container">CropGuard · maize disease detection for Rwandan farmers</div></footer>
+  <script type="module" src="js/pages/detect.js"></script>
+</body>
+</html>
