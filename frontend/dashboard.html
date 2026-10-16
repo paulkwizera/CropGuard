@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14372a">
+  <meta name="description" content="Your maize checks, recent results and weather at a glance.">
+  <title>Home · CropGuard</title>
+  <script>try{var l=localStorage.getItem("cropguard.lang");if(l&&l!=="en"){document.documentElement.classList.add("i18n-pending");setTimeout(function(){document.documentElement.classList.remove("i18n-pending")},2500)}}catch(e){}</script>
+  <style>.i18n-pending body{visibility:hidden}</style>
+  <script>
+  /* If the page's scripts cannot start (for example the file was opened by double-clicking it), explain what to do. */
+  (function () {
+    var onFile = location.protocol === "file:";
+    setTimeout(function () {
+      if (document.documentElement.getAttribute("data-ready")) return;
+      var d = document.createElement("div");
+      d.className = "boot-warning"; d.setAttribute("role", "alert");
+      d.innerHTML = onFile
+        ? "<strong>Open CropGuard through a small web server, not by double-clicking the file.</strong><p>Browsers block the page scripts on file:// addresses. Double-click <code>run-frontend.bat</code> (Windows) or run <code>./run-frontend.sh</code> in the project folder, or in the <code>frontend</code> folder run <code>python -m http.server 5500</code> and open <code>http://127.0.0.1:5500</code>.</p>"
+        : "<strong>This page did not start.</strong><p>Press Ctrl+Shift+R to reload. If it still looks wrong, open the browser console (F12) and check for a red error message; also make sure every file from the <code>frontend</code> folder was copied.</p>";
+      (document.body || document.documentElement).appendChild(d);
+    }, onFile ? 500 : 4000);
+  })();
+  </script>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+</head>
+<body class="app" data-page="dashboard">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <main class="app-main" id="main" tabindex="-1">
+    <div class="page">
+      <header class="page-head">
+        <div><h1 id="greeting">Welcome back</h1><p id="greeting-sub">Here is how your maize checks are going.</p></div>
+        <a class="btn btn--lg only-mobile" href="detect.html"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>Check a plant</a>
+      </header>
+
+      <dl class="stat-strip" id="stats" aria-label="Summary of your checks">
+        <div class="stat"><dt>Total checks</dt><dd><span class="skeleton" style="display:block;width:3rem;height:1.8rem"></span></dd></div>
+        <div class="stat"><dt>Problems found</dt><dd><span class="skeleton" style="display:block;width:3rem;height:1.8rem"></span></dd></div>
+        <div class="stat"><dt>Most common</dt><dd><span class="skeleton" style="display:block;width:7rem;height:1.8rem"></span></dd></div>
+        <div class="stat"><dt>Last check</dt><dd><span class="skeleton" style="display:block;width:5rem;height:1.8rem"></span></dd></div>
+      </dl>
+
+      <div class="dash-grid">
+        <section aria-labelledby="recent-title">
+          <div class="section-title"><h2 id="recent-title">Recent checks</h2><a href="history.html" id="all-link" hidden>View all</a></div>
+          <div id="recent" aria-live="polite"><div class="skeleton" style="height:4.5rem;margin-bottom:.6rem"></div><div class="skeleton" style="height:4.5rem;margin-bottom:.6rem"></div><div class="skeleton" style="height:4.5rem"></div></div>
+        </section>
+
+        <div class="dash-side">
+          <section aria-labelledby="mix-title" id="mix-section" hidden>
+            <div class="section-title"><h2 id="mix-title">What you found</h2></div>
+            <div class="panel panel-pad" id="mix"></div>
+          </section>
+          <section aria-labelledby="wx-title">
+            <div class="section-title"><h2 id="wx-title">Weather today</h2><a href="advisory.html">Full advice</a></div>
+            <div class="panel panel-pad" id="wx"><div class="skeleton" style="height:5rem"></div></div>
+          </section>
+          <section aria-labelledby="start-title" id="start-section" hidden>
+            <div class="section-title"><h2 id="start-title">Getting started</h2></div>
+            <ol class="checklist panel" id="start"></ol>
+          </section>
+        </div>
+      </div>
+    </div>
+  </main>
+  <script type="module" src="js/pages/dashboard.js"></script>
+</body>
+</html>

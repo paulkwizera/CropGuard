@@ -21,11 +21,12 @@ CropGuard/
 │   ├── manage.py
 │   └── requirements.txt
 ├── frontend/                HTML + CSS + JS, no build step  (you)
-│   ├── index.html login.html register.html detect.html history.html advisory.html
-│   ├── css/                 tokens.css (colours/fonts) · base.css · components.css
+│   ├── index login register dashboard detect history advisory account  (.html)
+│   ├── css/                 tokens · base · layout · components · pages
 │   └── js/
 │       ├── config.js        API URL + USE_MOCK switch
 │       ├── api.js           every backend call lives here
+│       ├── components/      shell, icons, forms, dialog, chart, …
 │       ├── mock.js          fake data so you can work before the API exists
 │       ├── auth.js · ui.js  token storage, shared header, toasts, helpers
 │       └── pages/           one script per page
@@ -56,13 +57,11 @@ python manage.py runserver           # http://127.0.0.1:8000/api/health/
 ```
 
 ### 2. Frontend (no install)
-```bash
-cd frontend
-python -m http.server 5500           # open http://127.0.0.1:5500
-```
-(or use the VS Code **Live Server** extension on port 5500). Pages use ES modules, so open them through a server, not by double-clicking the file.
+Double-click **`run-frontend.bat`** (Windows) or run `./run-frontend.sh` (Mac/Linux). It starts a small server and opens http://127.0.0.1:5500.
+(or `cd frontend && python -m http.server 5500`, or the VS Code **Live Server** extension).
+**Do not open the .html files by double-clicking them**: browsers block the page scripts on `file://` addresses and the pages look broken.
 
-`frontend/js/config.js` starts with `USE_MOCK: true`, so every page works with sample data. Set it to `false` once the backend is running.
+`frontend/js/config.js` starts with `USE_MOCK: true`, so every page works with sample data (add `?seed=1` to preload sample checks). Set it to `false` once the backend is running. The interface is available in Kinyarwanda, English and Français (see the *Languages* section of [`frontend/README.md`](frontend/README.md)).
 
 ### 3. Tests (backend)
 ```bash

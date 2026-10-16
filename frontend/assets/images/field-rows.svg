@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 840 340" preserveAspectRatio="xMidYMax slice">
+<defs><symbol id="maize" viewBox="-64 -144 128 144" overflow="visible"><rect x="-2.2" y="-124" width="4.4" height="124" rx="2.2" fill="currentColor"/><path d="M0 -30C-22 -34 -44 -48 -56 -70C-34 -64 -14 -52 0 -40Z" fill="currentColor"/><path d="M0 -52C22 -56 44 -70 58 -92C34 -86 14 -74 0 -62Z" fill="currentColor"/><path d="M0 -76C-18 -82 -34 -96 -42 -116C-24 -108 -10 -96 0 -86Z" fill="currentColor"/><path d="M0 -98C12 -106 26 -120 30 -138C16 -130 6 -118 0 -108Z" fill="currentColor"/><ellipse cx="8" cy="-60" rx="5.5" ry="13" fill="#f0b823"/><path d="M8 -46C20 -52 22 -72 8 -78" fill="none" stroke="currentColor" stroke-width="3" opacity=".9"/><path d="M0 -122l-8 -14M0 -122l0 -18M0 -122l8 -14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol></defs>
+<g transform="translate(0 0)">
+<use href="#maize" x="30" y="250" width="64" height="72" color="#1c4a37" opacity=".75"/>
+<use href="#maize" x="98" y="250" width="64" height="72" color="#1c4a37" opacity=".75"/>
+<use href="#maize" x="180" y="250" width="64" height="72" color="#1c4a37" opacity=".75"/>
+<use href="#maize" x="262" y="250" width="64" height="72" color="#1c4a37" opacity=".75"/>
+<use href="#maize" x="317" y="250" width="64" height="72" color="#1c4a37" opacity=".75"/>
+<use href="#maize" x="392" y="250" width="64" height="72" color="#1c4a37" opacity=".75"/>
+<use href="#maize" x="481" y="250" width="64" height="72" color="#1c4a37" opacity=".75"/>
+<use href="#maize" x="541" y="250" width="64" height="72" color="#1c4a37" opacity=".75"/>
+<use href="#maize" x="623" y="250" width="64" height="72" color="#1c4a37" opacity=".75"/>
+<use href="#maize" x="704" y="250" width="64" height="72" color="#1c4a37" opacity=".75"/>
+<use href="#maize" x="761" y="250" width="64" height="72" color="#1c4a37" opacity=".75"/>
+<use href="#maize" x="24" y="320" width="96" height="108" color="#265f46" opacity=".9"/>
+<use href="#maize" x="118" y="320" width="96" height="108" color="#265f46" opacity=".9"/>
+<use href="#maize" x="217" y="320" width="96" height="108" color="#265f46" opacity=".9"/>
+<use href="#maize" x="322" y="320" width="96" height="108" color="#265f46" opacity=".9"/>
+<use href="#maize" x="437" y="320" width="96" height="108" color="#265f46" opacity=".9"/>
+<use href="#maize" x="541" y="320" width="96" height="108" color="#265f46" opacity=".9"/>
+<use href="#maize" x="634" y="320" width="96" height="108" color="#265f46" opacity=".9"/>
+<use href="#maize" x="743" y="320" width="96" height="108" color="#265f46" opacity=".9"/>
+</g>
+</svg>

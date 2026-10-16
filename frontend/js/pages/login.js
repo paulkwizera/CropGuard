@@ -1,23 +1,35 @@
 import { api } from "../api.js";
-import { saveTokens } from "../auth.js";
-import { renderHeader, setBusy } from "../ui.js";
+import { isLoggedIn, saveTokens } from "../auth.js";
+import { mountAuthAside } from "../components/shell.js";
+import { bindPasswordToggle, bindValidation, clearAll, setBusy, showFormError } from "../components/forms.js";
+import { getMe } from "../session.js";
+import { hasChosenLang, setLang } from "../i18n.js";
 
-renderHeader("login.html");
+if (isLoggedIn()) window.location.replace("dashboard.html");
+mountAuthAside();
+
 const form = document.getElementById("login-form");
-const errorBox = document.getElementById("form-error");
+if (new URLSearchParams(location.search).has("expired")) document.getElementById("expired-note").hidden = false;
+bindPasswordToggle(document.getElementById("toggle-pw"), form.password);
+
+const validate = bindValidation(form, {
+  username: (v) => (v ? "" : "Enter your username."),
+  password: (v) => (v ? "" : "Enter your password."),
+});
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
-  errorBox.classList.add("hidden");
+  clearAll(form);
+  if (!validate()) return;
   const button = form.querySelector("button[type=submit]");
-  setBusy(button, true, "Signing in…");
+  setBusy(button, true);
   try {
     saveTokens(await api.login(form.username.value.trim(), form.password.value));
-    window.location.href = "detect.html";
+    const me = await getMe({ fresh: true }).catch(() => null);
+    if (me?.preferred_language && !hasChosenLang()) setLang(me.preferred_language);
+    window.location.href = "dashboard.html";
   } catch (err) {
-    errorBox.textContent = err.status === 401 ? "Wrong username or password." : err.message;
-    errorBox.classList.remove("hidden");
-  } finally {
+    showFormError(form, err.status === 401 || err.status === 400 ? "That username and password do not match. Check them and try again." : err.message);
     setBusy(button, false);
   }
 });

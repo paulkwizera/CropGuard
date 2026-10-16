@@ -2,44 +2,131 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14372a">
+  <meta name="description" content="Photograph a maize leaf, see what is wrong, and get treatment and weather advice in Kinyarwanda, English or French.">
+  <title>CropGuard · Maize disease detection for Rwandan farmers</title>
+  <script>try{var l=localStorage.getItem("cropguard.lang");if(l&&l!=="en"){document.documentElement.classList.add("i18n-pending");setTimeout(function(){document.documentElement.classList.remove("i18n-pending")},2500)}}catch(e){}</script>
+  <style>.i18n-pending body{visibility:hidden}</style>
+  <script>
+  /* If the page's scripts cannot start (for example the file was opened by double-clicking it), explain what to do. */
+  (function () {
+    var onFile = location.protocol === "file:";
+    setTimeout(function () {
+      if (document.documentElement.getAttribute("data-ready")) return;
+      var d = document.createElement("div");
+      d.className = "boot-warning"; d.setAttribute("role", "alert");
+      d.innerHTML = onFile
+        ? "<strong>Open CropGuard through a small web server, not by double-clicking the file.</strong><p>Browsers block the page scripts on file:// addresses. Double-click <code>run-frontend.bat</code> (Windows) or run <code>./run-frontend.sh</code> in the project folder, or in the <code>frontend</code> folder run <code>python -m http.server 5500</code> and open <code>http://127.0.0.1:5500</code>.</p>"
+        : "<strong>This page did not start.</strong><p>Press Ctrl+Shift+R to reload. If it still looks wrong, open the browser console (F12) and check for a red error message; also make sure every file from the <code>frontend</code> folder was copied.</p>";
+      (document.body || document.documentElement).appendChild(d);
+    }, onFile ? 500 : 4000);
+  })();
+  </script>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
-  <title>Know what is wrong with your maize · CropGuard</title>
+  <link rel="stylesheet" href="css/pages.css">
 </head>
-<body>
+<body class="public" data-page="home">
+  <a class="skip-link" href="#main">Skip to main content</a>
   <header id="site-header"></header>
-  <main>
+  <main id="main" tabindex="-1">
     <section class="hero">
       <div class="container hero-grid">
-        <div>
+        <div class="hero-copy">
           <h1>Know what is wrong with your maize before it spreads.</h1>
-          <p class="lead">Take a photo of a maize leaf. CropGuard names the disease, tells you how to treat it, and checks the weather so you know when to spray or irrigate.</p>
-          <div class="row">
-            <a class="btn" id="cta-primary" href="register.html">Create a free account</a>
-            <a class="btn btn--ghost" id="cta-secondary" href="login.html">Sign in</a>
+          <p class="lead">Photograph a maize leaf. CropGuard marks the damaged area, suggests what to do about it, and checks the weather so you know when to irrigate or spray.</p>
+          <div class="row hero-cta">
+            <a class="btn btn--lg" id="cta-primary" href="register.html">Create a free account</a>
+            <a class="btn btn--lg btn--secondary" id="cta-secondary" href="login.html">Sign in</a>
           </div>
+          <ul class="hero-points">
+            <li><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg>Works from your phone camera</li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-language"/></svg>Advice in Kinyarwanda, English or Français</li>
+          </ul>
         </div>
-        <a class="dropzone" id="cta-drop" href="detect.html">
-          <strong>Drop a maize leaf photo here</strong>
-          <span class="muted">or tap to choose one from your phone</span>
-        </a>
+        <figure class="hero-figure">
+          <svg class="hero-art" viewBox="0 0 560 460" role="img" aria-labelledby="art-title art-desc">
+  <title id="art-title">Illustration of a maize field on Rwandan hills with a phone checking a leaf</title>
+  <desc id="art-desc">A long green maize leaf with brown lesions. A yellow viewfinder frame and the label Problem area mark one lesion.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#dcebd9"/><stop offset="1" stop-color="#f8f1d6"/></linearGradient>
+    <linearGradient id="leafGrad" x1="70" y1="400" x2="500" y2="70" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#1c4a37"/><stop offset=".55" stop-color="#2b7d3b"/><stop offset="1" stop-color="#58b36a"/></linearGradient>
+    <path id="leafShape" d="M70 400C156 246 301 122 500 70C407 253 272 360 70 400Z"/>
+    <clipPath id="leafClip"><use href="#leafShape"/></clipPath>
+    <symbol id="maize" viewBox="-64 -144 128 144" overflow="visible"><rect x="-2.2" y="-124" width="4.4" height="124" rx="2.2" fill="currentColor"/><path d="M0 -30C-22 -34 -44 -48 -56 -70C-34 -64 -14 -52 0 -40Z" fill="currentColor"/><path d="M0 -52C22 -56 44 -70 58 -92C34 -86 14 -74 0 -62Z" fill="currentColor"/><path d="M0 -76C-18 -82 -34 -96 -42 -116C-24 -108 -10 -96 0 -86Z" fill="currentColor"/><path d="M0 -98C12 -106 26 -120 30 -138C16 -130 6 -118 0 -108Z" fill="currentColor"/><ellipse cx="8" cy="-60" rx="5.5" ry="13" fill="#f0b823"/><path d="M0 -122l-8 -14M0 -122l0 -18M0 -122l8 -14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></symbol>
+  </defs>
+  <rect width="560" height="460" rx="24" fill="url(#sky)"/>
+  <circle cx="452" cy="92" r="58" fill="#f0b823" opacity=".2"/><circle cx="452" cy="92" r="36" fill="#f0b823" opacity=".92"/>
+  <path d="M0 250C70 214 140 236 220 208S380 188 560 236V460H0z" fill="#cfe5cd"/>
+  <path d="M0 300C90 262 170 292 270 262S450 250 560 286V460H0z" fill="#a9d3a8"/>
+  <path d="M0 352C110 322 220 350 330 328S490 318 560 340V460H0z" fill="#6fbf7c"/>
+  <g color="#2b7d3b" opacity=".85"><use href="#maize" x="18" y="318" width="54" height="60"/><use href="#maize" x="96" y="326" width="54" height="60"/><use href="#maize" x="388" y="318" width="54" height="60"/><use href="#maize" x="470" y="312" width="54" height="60"/></g>
+  <g color="#1c4a37"><use href="#maize" x="-6" y="352" width="84" height="94"/><use href="#maize" x="118" y="366" width="84" height="94"/><use href="#maize" x="262" y="372" width="84" height="94"/><use href="#maize" x="406" y="362" width="84" height="94"/><use href="#maize" x="508" y="350" width="84" height="94"/></g>
+  <use href="#leafShape" transform="translate(-26 -86) rotate(-13 285 235)" fill="#1c4a37" opacity=".3"/>
+  <path d="M70 400C52 412 36 428 22 452" stroke="#1c4a37" stroke-width="13" stroke-linecap="round" fill="none"/>
+  <use href="#leafShape" fill="url(#leafGrad)"/>
+  <g clip-path="url(#leafClip)" fill="none" stroke="#e3efdf" stroke-linecap="round">
+    <g opacity=".22" stroke-width="1.4">
+      <path d="M70 400C200 300 340 190 495 75" transform="translate(0 -34)"/><path d="M70 400C200 300 340 190 495 75" transform="translate(0 -22)"/><path d="M70 400C200 300 340 190 495 75" transform="translate(0 -11)"/>
+      <path d="M70 400C200 300 340 190 495 75" transform="translate(0 12)"/><path d="M70 400C200 300 340 190 495 75" transform="translate(0 25)"/><path d="M70 400C200 300 340 190 495 75" transform="translate(0 38)"/><path d="M70 400C200 300 340 190 495 75" transform="translate(0 52)"/><path d="M70 400C200 300 340 190 495 75" transform="translate(0 66)"/>
+    </g>
+    <path d="M70 400C200 300 340 190 495 75" stroke-width="4.5" opacity=".7"/>
+  </g>
+  <g transform="rotate(-37.5 300 250)"><ellipse cx="300" cy="250" rx="62" ry="22" fill="#e6cf63" opacity=".5"/><ellipse cx="300" cy="250" rx="46" ry="11" fill="#7d5d34"/><ellipse cx="300" cy="250" rx="30" ry="5.5" fill="#5e4425"/></g>
+  <g transform="rotate(-37.5 220 308)"><ellipse cx="220" cy="308" rx="34" ry="12" fill="#e6cf63" opacity=".45"/><ellipse cx="220" cy="308" rx="24" ry="6" fill="#7d5d34"/></g>
+  <g transform="rotate(-37.5 380 190)"><ellipse cx="380" cy="190" rx="38" ry="11" fill="#e6cf63" opacity=".45"/><ellipse cx="380" cy="190" rx="27" ry="6" fill="#7d5d34"/></g>
+  <g fill="none" stroke="#f0b823" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"><path d="M240 232v-32h32M334 200h32v32M366 270v32h-32M272 302h-32v-32" transform="translate(-6 0)"/></g>
+  <g transform="translate(228 160)"><rect width="118" height="30" rx="6" fill="#f0b823"/><text x="59" y="20.5" text-anchor="middle" font-family="Public Sans, system-ui, sans-serif" font-weight="700" font-size="14" fill="#0e2a1f">Problem area</text></g>
+</svg>
+          <figcaption>Illustration: CropGuard frames the part of the leaf it is concerned about.</figcaption>
+        </figure>
       </div>
     </section>
-    <section class="container page">
-      <h2>How it works</h2>
-      <ol class="steps">
-        <li><h3>Photograph one leaf</h3><p class="muted">Use daylight and fill the frame with the leaf.</p></li>
-        <li><h3>See the diagnosis</h3><p class="muted">The model marks the damaged area and shows how sure it is.</p></li>
-        <li><h3>Get advice in your language</h3><p class="muted">Treatment steps and a 24-hour weather plan in Kinyarwanda, English or French.</p></li>
-      </ol>
+
+    <section class="section" id="how" aria-labelledby="how-title">
+      <div class="container">
+        <h2 id="how-title" class="section-heading">From photo to plan in three steps</h2>
+        <ol class="steps">
+          <li><figure class="step-fig"><img class="step-art" src="assets/images/step-photo.svg" alt="" width="280" height="190" loading="lazy" decoding="async"><span class="step-num" aria-hidden="true">1</span></figure><h3>Photograph one leaf</h3><p>Use daylight and fill the frame with a single leaf. Take a new photo or pick one from your gallery.</p></li>
+          <li><figure class="step-fig"><img class="step-art" src="assets/images/step-diagnosis.svg" alt="" width="280" height="190" loading="lazy" decoding="async"><span class="step-num" aria-hidden="true">2</span></figure><h3>See what the model finds</h3><p>CropGuard draws a frame around the affected area and shows how sure it is of the disease name.</p></li>
+          <li><figure class="step-fig"><img class="step-art" src="assets/images/step-advice.svg" alt="" width="280" height="190" loading="lazy" decoding="async"><span class="step-num" aria-hidden="true">3</span></figure><h3>Get advice you can act on</h3><p>Ask for treatment steps in your language, then check the 24-hour weather before you spray or irrigate.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <section class="section section--tint" id="features" aria-labelledby="feat-title">
+      <div class="container split">
+        <div>
+          <h2 id="feat-title" class="section-heading">Made for the field, not the office</h2>
+          <p class="muted">CropGuard is designed for smallholder maize farmers in Rwanda: quick on a phone, light on mobile data, and clear without technical words.</p>
+          <div class="note">
+            <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
+            <p><strong>A helper, not a laboratory.</strong> CropGuard gives a computer estimate from a photo and currently supports maize only. For a severe outbreak, confirm with your local agronomist.</p>
+          </div>
+        </div>
+        <ul class="feature-list">
+          <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg></span><div><h3>Light on data</h3><p>Photos are shrunk on your phone before they are sent, so checks stay fast on a weak connection.</p></div></li>
+          <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-language"/></svg></span><div><h3>Your language</h3><p>Treatment and weather advice in Kinyarwanda, English or Français.</p></div></li>
+          <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-cloud"/></svg></span><div><h3>Weather plan</h3><p>The next 24 hours for your district, with advice on irrigation and spraying.</p></div></li>
+          <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg></span><div><h3>Every check saved</h3><p>Look back at earlier photos and results to see how your field is changing.</p></div></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="cta-band on-dark" aria-labelledby="cta-title">
+      <div class="container cta-inner">
+        <h2 id="cta-title">Check your first leaf today.</h2>
+        <a class="btn btn--kernel btn--lg" id="cta-band" href="register.html">Create a free account</a>
+      </div>
     </section>
   </main>
-  <footer class="site-footer"><div class="container">CropGuard · maize disease detection for Rwandan farmers</div></footer>
+  <footer id="site-footer"></footer>
   <script type="module" src="js/pages/home.js"></script>
 </body>
 </html>

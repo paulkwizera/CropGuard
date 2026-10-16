@@ -2,37 +2,72 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14372a">
+  <meta name="description" content="A 24-hour weather plan with irrigation and spraying advice.">
+  <title>Weather advice · CropGuard</title>
+  <script>try{var l=localStorage.getItem("cropguard.lang");if(l&&l!=="en"){document.documentElement.classList.add("i18n-pending");setTimeout(function(){document.documentElement.classList.remove("i18n-pending")},2500)}}catch(e){}</script>
+  <style>.i18n-pending body{visibility:hidden}</style>
+  <script>
+  /* If the page's scripts cannot start (for example the file was opened by double-clicking it), explain what to do. */
+  (function () {
+    var onFile = location.protocol === "file:";
+    setTimeout(function () {
+      if (document.documentElement.getAttribute("data-ready")) return;
+      var d = document.createElement("div");
+      d.className = "boot-warning"; d.setAttribute("role", "alert");
+      d.innerHTML = onFile
+        ? "<strong>Open CropGuard through a small web server, not by double-clicking the file.</strong><p>Browsers block the page scripts on file:// addresses. Double-click <code>run-frontend.bat</code> (Windows) or run <code>./run-frontend.sh</code> in the project folder, or in the <code>frontend</code> folder run <code>python -m http.server 5500</code> and open <code>http://127.0.0.1:5500</code>.</p>"
+        : "<strong>This page did not start.</strong><p>Press Ctrl+Shift+R to reload. If it still looks wrong, open the browser console (F12) and check for a red error message; also make sure every file from the <code>frontend</code> folder was copied.</p>";
+      (document.body || document.documentElement).appendChild(d);
+    }, onFile ? 500 : 4000);
+  })();
+  </script>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
-  <title>Weather advice · CropGuard</title>
+  <link rel="stylesheet" href="css/pages.css">
 </head>
-<body>
-  <header id="site-header"></header>
-  <main class="page">
-    <div class="container stack">
-      <div class="page-head"><h1>Weather advice</h1><p class="muted">Next 24 hours for your area, with advice on irrigation and spraying.</p></div>
-      <form class="form card" id="advisory-form">
-        <div id="form-error" class="form-error hidden" role="alert"></div>
-        <div class="field"><label for="city">District or town</label><input id="city" name="city" placeholder="e.g. Musanze, Huye, Kigali" required></div>
-        <div class="field"><label for="language">Language</label>
-          <select id="language"><option value="rw">Kinyarwanda</option><option value="en">English</option><option value="fr">Français</option></select></div>
-        <button class="btn" type="submit">Get advice</button>
+<body class="app" data-page="advisory">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <main class="app-main" id="main" tabindex="-1">
+    <div class="page">
+      <header class="page-head">
+        <div><h1>Weather advice</h1><p>The next 24 hours for your area, with advice on irrigation and spraying.</p></div>
+      </header>
+      <form class="panel panel-pad adv-form" id="adv-form" novalidate>
+        <div class="alert alert--error" data-form-error role="alert" hidden><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><p data-form-error-text></p></div>
+        <div class="field"><label for="city">District or town</label><input class="input" id="city" name="city" list="districts" autocomplete="off" placeholder="e.g. Musanze" aria-describedby="city-error" required><datalist id="districts"></datalist><p class="field-error" id="city-error"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span></span></p></div>
+        <fieldset class="field" style="border:0;padding:0;margin:0"><legend class="label" style="padding:0;margin-bottom:.4rem">Language</legend><div class="segmented" id="lang-seg" role="radiogroup" aria-label="Language"></div></fieldset>
+        <button class="btn btn--lg" type="submit"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg>Get advice</button>
       </form>
-      <section id="advisory-result" class="hidden stack" aria-live="polite">
-        <div class="card stack"><h2>Advice for <span id="out-city"></span></h2><p class="advice-text" id="out-advice"></p></div>
-        <div class="card stack">
-          <h3>Forecast</h3><p class="muted" id="out-totals"></p>
-          <div class="table-wrap"><table><thead><tr><th>Time</th><th>Temp</th><th>Humidity</th><th>Sky</th><th>Rain</th></tr></thead><tbody id="out-rows"></tbody></table></div>
-        </div>
-      </section>
+
+      <div id="adv-loading" class="stack" hidden aria-live="polite"><div class="skeleton" style="height:9rem"></div><div class="skeleton" style="height:12rem"></div></div>
+
+      <div id="adv-result" class="stack-lg" hidden>
+        <section class="advice-card" aria-labelledby="out-title">
+          <h2 id="out-title">Advice for <span id="out-city"></span></h2>
+          <div class="prose-ai" id="out-advice"></div>
+        </section>
+        <dl class="stat-strip" aria-label="Forecast summary">
+          <div class="stat"><dt>Rain expected</dt><dd id="out-rain"></dd></div>
+          <div class="stat"><dt>Average temperature</dt><dd id="out-temp"></dd></div>
+          <div class="stat"><dt>Highest humidity</dt><dd id="out-hum"></dd></div>
+        </dl>
+        <section class="panel panel-pad" aria-labelledby="chart-title">
+          <div class="section-title"><h2 id="chart-title">Next 24 hours</h2>
+            <p class="legend" aria-hidden="true"><span><i style="background:var(--forest-900)"></i>Temperature</span><span><i style="background:var(--rain)"></i>Rain</span></p></div>
+          <div id="chart"></div>
+          <details class="disclosure"><summary><svg class="icon icon--sm" aria-hidden="true"><use href="#i-chevron"/></svg>Show the hour-by-hour table</summary>
+            <div class="table-wrap"><table><thead><tr><th scope="col">Time</th><th scope="col">Temperature</th><th scope="col">Humidity</th><th scope="col">Sky</th><th scope="col">Wind</th><th scope="col">Rain</th></tr></thead><tbody id="out-rows"></tbody></table></div></details>
+        </section>
+      </div>
     </div>
   </main>
-  <footer class="site-footer"><div class="container">CropGuard · maize disease detection for Rwandan farmers</div></footer>
   <script type="module" src="js/pages/advisory.js"></script>
 </body>
 </html>

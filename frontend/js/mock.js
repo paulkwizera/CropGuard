@@ -4,8 +4,28 @@ const LABELS = ["Common Rust", "Northern Leaf Blight", "Gray Leaf Spot"]; // sam
 const wait = (ms = 500) => new Promise((r) => setTimeout(r, ms));
 const uid = () => Math.random().toString(16).slice(2).padEnd(24, "0").slice(0, 24);
 
+// Add ?seed=1 to any URL (once per tab) to preload sample checks so history and dashboard look populated.
+const SEEDED = new URLSearchParams(location.search).has("seed") ? (sessionStorage.setItem("cropguard.seed", "1"), true) : sessionStorage.getItem("cropguard.seed") === "1";
+
+function sampleLeaf(spot) {
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="640" height="480" viewBox="0 0 640 480"><rect width="640" height="480" fill="#5b4a34"/><path d="M60 440C140 260 330 130 590 70C500 290 320 410 60 440Z" fill="#3a7d44"/><path d="M60 440L590 70" stroke="#a3d19a" stroke-width="6"/><ellipse cx="${spot[0]}" cy="${spot[1]}" rx="44" ry="13" fill="#e2cf6a" opacity=".6" transform="rotate(-37 ${spot[0]} ${spot[1]})"/><ellipse cx="${spot[0]}" cy="${spot[1]}" rx="30" ry="7" fill="#6e5230" transform="rotate(-37 ${spot[0]} ${spot[1]})"/></svg>`;
+  return "data:image/svg+xml;utf8," + encodeURIComponent(svg);
+}
+
 let me = { id: uid(), username: "demo", email: "", phone: "", district: "Musanze", preferred_language: "rw" };
 const store = [];
+if (SEEDED) {
+  const H = 3600e3;
+  [["Northern Leaf Blight", 0.93, 1, [330, 250]], ["Common Rust", 0.88, 26, [260, 300]], ["Northern Leaf Blight", 0.81, 74, [400, 190]], ["Gray Leaf Spot", 0.86, 200, [300, 260]], [null, null, 500, [300, 260]]].forEach(([label, conf, hoursAgo, spot]) => {
+    const [x, y] = spot;
+    store.push({
+      id: uid(), image: sampleLeaf(spot), image_width: 640, image_height: 480,
+      top_label: label || "", top_confidence: conf,
+      results: label ? [{ label, confidence: conf, bbox: [x - 55, y - 48, x + 55, y + 48] }] : [],
+      advice: "", created_at: new Date(Date.now() - hoursAgo * H).toISOString(),
+    });
+  });
+}
 
 function fakeResult(imageUrl, w, h) {
   const label = LABELS[Math.floor(Math.random() * LABELS.length)];
@@ -31,8 +51,10 @@ export const mock = {
   async register(data) { await wait(); me = { ...me, ...data, id: uid() }; delete me.password; return me; },
   async login() { await wait(); return { access: "mock-access", refresh: "mock-refresh" }; },
   async me() { await wait(150); return me; },
+  async updateMe(data) { await wait(400); me = { ...me, ...data }; return me; },
 
-  async createDetection(file) {
+  async createDetection(file, onProgress) {
+    for (const p of [0.2, 0.5, 0.8, 1]) { await wait(180); onProgress?.(p); }
     await wait(900);
     const url = URL.createObjectURL(file);
     const [w, h] = await imageSize(url);
