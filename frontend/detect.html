@@ -2,56 +2,124 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14372a">
+  <meta name="description" content="Upload a photo of a maize leaf and see what the model finds.">
+  <title>Check a plant · CropGuard</title>
+  <script>try{var l=localStorage.getItem("cropguard.lang");if(l&&l!=="en"){document.documentElement.classList.add("i18n-pending");setTimeout(function(){document.documentElement.classList.remove("i18n-pending")},2500)}}catch(e){}</script>
+  <style>.i18n-pending body{visibility:hidden}</style>
+  <script>
+  /* If the page's scripts cannot start (for example the file was opened by double-clicking it), explain what to do. */
+  (function () {
+    var onFile = location.protocol === "file:";
+    setTimeout(function () {
+      if (document.documentElement.getAttribute("data-ready")) return;
+      var d = document.createElement("div");
+      d.className = "boot-warning"; d.setAttribute("role", "alert");
+      d.innerHTML = onFile
+        ? "<strong>Open CropGuard through a small web server, not by double-clicking the file.</strong><p>Browsers block the page scripts on file:// addresses. Double-click <code>run-frontend.bat</code> (Windows) or run <code>./run-frontend.sh</code> in the project folder, or in the <code>frontend</code> folder run <code>python -m http.server 5500</code> and open <code>http://127.0.0.1:5500</code>.</p>"
+        : "<strong>This page did not start.</strong><p>Press Ctrl+Shift+R to reload. If it still looks wrong, open the browser console (F12) and check for a red error message; also make sure every file from the <code>frontend</code> folder was copied.</p>";
+      (document.body || document.documentElement).appendChild(d);
+    }, onFile ? 500 : 4000);
+  })();
+  </script>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
-  <title>Check a plant · CropGuard</title>
+  <link rel="stylesheet" href="css/pages.css">
 </head>
-<body>
-  <header id="site-header"></header>
-  <main class="page">
-    <div class="container">
-      <div class="page-head"><h1>Check a maize plant</h1><p class="muted">One leaf per photo works best. Use daylight and keep the leaf in focus.</p></div>
+<body class="app" data-page="detect">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <main class="app-main" id="main" tabindex="-1">
+    <div class="page">
+      <header class="page-head">
+        <div><h1>Check a plant</h1><p>Photograph one maize leaf and see what the model finds.</p></div>
+      </header>
+      <div class="detect-layout">
+        <section class="panel detect-main" aria-label="Plant check">
+          <ol class="stepper" id="stepper" aria-label="Progress">
+            <li data-step="photo" aria-current="step"><span>1</span>Photo</li>
+            <li data-step="diagnosis"><span>2</span>Diagnosis</li>
+            <li data-step="advice"><span>3</span>Advice</li>
+          </ol>
 
-      <section id="upload-panel">
-        <label class="dropzone" id="dropzone" for="file-input">
-          <strong>Choose or drop a photo</strong>
-          <span class="muted">JPG or PNG, up to 8 MB</span>
-        </label>
-        <input class="visually-hidden" id="file-input" type="file" accept="image/*">
-      </section>
-
-      <section id="preview-panel" class="hidden stack">
-        <div class="preview"><img id="preview-img" alt="Selected maize leaf"></div>
-        <div class="row">
-          <button class="btn" id="analyze-btn" type="button">Check this plant</button>
-          <button class="btn btn--ghost" id="reset-btn" type="button">Choose another photo</button>
-        </div>
-      </section>
-
-      <section id="result-panel" class="hidden result-layout" aria-live="polite">
-        <div class="preview"><canvas id="result-canvas"></canvas></div>
-        <div class="card stack">
-          <div id="result-summary"></div>
-          <div id="advice-box" class="hidden stack">
-            <h3>Treatment advice</h3>
-            <p class="advice-text" id="advice-text"></p>
+          <div id="stage-photo">
+            <div class="dropzone frame frame--leaf" id="dropzone">
+              <span class="dz-icon"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-upload"/></svg></span>
+              <h2>Add a photo of a maize leaf</h2>
+              <p class="muted">Drag a photo here, or choose one below.</p>
+              <div class="row dz-actions">
+                <button type="button" class="btn" id="camera-btn"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>Take a photo</button>
+                <button type="button" class="btn btn--secondary" id="gallery-btn"><svg class="icon" aria-hidden="true"><use href="#i-image"/></svg>Choose from gallery</button>
+              </div>
+              <p class="hint" style="margin:0">JPG or PNG, up to 8 MB</p>
+              <input class="visually-hidden" id="camera-input" type="file" accept="image/*" capture="environment" tabindex="-1" aria-hidden="true">
+              <input class="visually-hidden" id="file-input" type="file" accept="image/*" tabindex="-1" aria-hidden="true">
+            </div>
+            <div class="alert alert--error" id="photo-error" role="alert" hidden style="margin-top:1rem"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><p data-text></p></div>
           </div>
-          <div class="row hidden" id="advice-controls">
-            <div class="field"><label for="advice-lang">Language</label>
-              <select id="advice-lang"><option value="rw">Kinyarwanda</option><option value="en">English</option><option value="fr">Français</option></select></div>
-            <button class="btn" id="advice-btn" type="button">Get treatment advice</button>
+
+          <div id="stage-ready" hidden>
+            <figure class="preview frame"><img id="preview-img" alt="Photo you selected"></figure>
+            <p class="file-meta" id="file-meta"></p>
+            <div class="row">
+              <button class="btn btn--lg" id="analyze-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg>Check this plant</button>
+              <button class="btn btn--lg btn--secondary" id="reset-btn" type="button">Choose another photo</button>
+            </div>
           </div>
-          <button class="btn btn--ghost" id="again-btn" type="button">Check another plant</button>
-        </div>
-      </section>
+
+          <div id="stage-busy" hidden>
+            <figure class="preview preview--busy frame"><img id="busy-img" alt="" aria-hidden="true"><span class="scan" aria-hidden="true"></span></figure>
+            <div class="busy-info" role="status" aria-live="polite">
+              <p class="busy-title" id="busy-title">Uploading photo…</p>
+              <div class="progress" id="progress"><span></span></div>
+            </div>
+          </div>
+
+          <div id="stage-error" hidden>
+            <div class="alert alert--error" role="alert"><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><div><strong>We could not check this photo</strong><p id="error-text"></p></div></div>
+            <div class="row" style="margin-top:1rem"><button class="btn" id="retry-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#i-refresh"/></svg>Try again</button><button class="btn btn--secondary" id="error-reset" type="button">Choose another photo</button></div>
+          </div>
+
+          <div id="stage-result" hidden>
+            <div class="result">
+              <figure class="result-media frame"><canvas id="result-canvas" role="img" aria-label="Your photo with the detected area framed"></canvas></figure>
+              <div class="result-body">
+                <div id="result-summary"></div>
+                <div class="advice" id="advice-section" hidden>
+                  <h3>Treatment advice</h3>
+                  <div class="advice-controls">
+                    <div class="field"><label for="advice-lang">Language</label><select class="select" id="advice-lang"></select></div>
+                    <button class="btn" id="advice-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg><span>Get advice</span></button>
+                  </div>
+                  <div id="advice-out" class="prose-ai advice-out" aria-live="polite" hidden></div>
+                  <button class="btn btn--sm btn--secondary" id="copy-advice" type="button" hidden><svg class="icon icon--sm" aria-hidden="true"><use href="#i-copy"/></svg>Copy advice</button>
+                </div>
+                <div class="row result-foot">
+                  <button class="btn btn--secondary" id="again-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>Check another plant</button>
+                  <a class="btn btn--secondary" href="history.html">View my checks</a>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <aside class="panel tips" aria-labelledby="tips-title">
+          <h2 id="tips-title">For a clear result</h2>
+          <ul>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-sun"/></svg><span><strong>Use daylight.</strong> Avoid deep shadow and the camera flash.</span></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg><span><strong>One leaf, close up.</strong> Fill most of the frame with the damaged leaf.</span></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg><span><strong>Hold steady.</strong> A sharp photo helps more than a big one.</span></li>
+            <li><svg class="icon" aria-hidden="true"><use href="#i-layers"/></svg><span><strong>Check a few leaves.</strong> Photograph plants from different parts of the field.</span></li>
+          </ul>
+        </aside>
+      </div>
     </div>
   </main>
-  <footer class="site-footer"><div class="container">CropGuard · maize disease detection for Rwandan farmers</div></footer>
   <script type="module" src="js/pages/detect.js"></script>
 </body>
 </html>

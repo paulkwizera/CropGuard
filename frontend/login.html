@@ -2,30 +2,67 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14372a">
+  <meta name="description" content="Sign in to CropGuard to check your maize and see your history.">
+  <title>Sign in · CropGuard</title>
+  <script>try{var l=localStorage.getItem("cropguard.lang");if(l&&l!=="en"){document.documentElement.classList.add("i18n-pending");setTimeout(function(){document.documentElement.classList.remove("i18n-pending")},2500)}}catch(e){}</script>
+  <style>.i18n-pending body{visibility:hidden}</style>
+  <script>
+  /* If the page's scripts cannot start (for example the file was opened by double-clicking it), explain what to do. */
+  (function () {
+    var onFile = location.protocol === "file:";
+    setTimeout(function () {
+      if (document.documentElement.getAttribute("data-ready")) return;
+      var d = document.createElement("div");
+      d.className = "boot-warning"; d.setAttribute("role", "alert");
+      d.innerHTML = onFile
+        ? "<strong>Open CropGuard through a small web server, not by double-clicking the file.</strong><p>Browsers block the page scripts on file:// addresses. Double-click <code>run-frontend.bat</code> (Windows) or run <code>./run-frontend.sh</code> in the project folder, or in the <code>frontend</code> folder run <code>python -m http.server 5500</code> and open <code>http://127.0.0.1:5500</code>.</p>"
+        : "<strong>This page did not start.</strong><p>Press Ctrl+Shift+R to reload. If it still looks wrong, open the browser console (F12) and check for a red error message; also make sure every file from the <code>frontend</code> folder was copied.</p>";
+      (document.body || document.documentElement).appendChild(d);
+    }, onFile ? 500 : 4000);
+  })();
+  </script>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
-  <title>Sign in · CropGuard</title>
+  <link rel="stylesheet" href="css/pages.css">
 </head>
-<body>
-  <header id="site-header"></header>
-  <main class="page">
-    <div class="container">
-      <div class="page-head"><h1>Sign in</h1></div>
-      <form class="form card" id="login-form" novalidate>
-        <div id="form-error" class="form-error hidden" role="alert"></div>
-        <div class="field"><label for="username">Username</label><input id="username" name="username" autocomplete="username" required></div>
-        <div class="field"><label for="password">Password</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
-        <button class="btn" type="submit">Sign in</button>
-        <p class="muted">New here? <a href="register.html">Create an account</a></p>
-      </form>
-    </div>
-  </main>
-  <footer class="site-footer"><div class="container">CropGuard · maize disease detection for Rwandan farmers</div></footer>
+<body class="public auth-page" data-page="login">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <div class="auth">
+    <aside class="auth-aside on-dark">
+      <div class="auth-aside-top"><a class="brand" href="index.html" aria-label="CropGuard home"><span data-brand></span></a><span data-lang-switch></span></div>
+      <div class="auth-aside-copy">
+        <h2>Healthy maize starts with a closer look.</h2>
+        <ul>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>Check a maize leaf from your phone</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-language"/></svg>Advice in your language</li>
+          <li><svg class="icon" aria-hidden="true"><use href="#i-cloud"/></svg>A weather plan for your district</li>
+        </ul>
+      </div>
+    </aside>
+    <main class="auth-main" id="main" tabindex="-1">
+      <div class="auth-card">
+        <h1>Sign in</h1>
+        <p class="muted">Welcome back. Enter your details to see your checks.</p>
+        <div class="alert alert--info" id="expired-note" role="status" hidden><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><p>Your session ended. Please sign in again.</p></div>
+        <form class="form" id="login-form" novalidate>
+          <div class="alert alert--error" data-form-error role="alert" hidden><svg class="icon" aria-hidden="true"><use href="#i-alert"/></svg><p data-form-error-text></p></div>
+          <div class="field"><label for="username">Username</label><input class="input" id="username" name="username" autocomplete="username" autocapitalize="none" spellcheck="false" aria-describedby="username-error" required><p class="field-error" id="username-error"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span></span></p></div>
+          <div class="field"><label for="password">Password</label>
+            <div class="input-group"><input class="input" id="password" name="password" type="password" autocomplete="current-password" aria-describedby="password-error" required>
+              <button class="icon-btn" type="button" id="toggle-pw" aria-label="Show password" aria-pressed="false"><svg class="icon" aria-hidden="true"><use href="#i-eye"/></svg></button></div><p class="field-error" id="password-error"><svg class="icon icon--sm" aria-hidden="true"><use href="#i-alert"/></svg><span></span></p></div>
+          <button class="btn btn--lg btn--block" type="submit">Sign in</button>
+        </form>
+        <p class="auth-alt">New to CropGuard? <a href="register.html">Create an account</a></p>
+      </div>
+    </main>
+  </div>
   <script type="module" src="js/pages/login.js"></script>
 </body>
 </html>

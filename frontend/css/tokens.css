@@ -1,33 +1,78 @@
-/* Design tokens: change colours/type here and the whole site follows. */
+/* =====================================================================
+   CropGuard design tokens. Change values here; everything follows.
+   ===================================================================== */
+@font-face {
+  font-family: "Bricolage Grotesque";
+  src: url("../assets/fonts/bricolage-grotesque.woff2") format("woff2");
+  font-weight: 200 800;
+  font-display: swap;
+}
+@font-face {
+  font-family: "Public Sans";
+  src: url("../assets/fonts/public-sans.woff2") format("woff2");
+  font-weight: 100 900;
+  font-display: swap;
+}
+
 :root {
-  --leaf: #1e4d32;        /* primary: maize leaf */
-  --leaf-deep: #153a25;
-  --leaf-soft: #e3eee3;
-  --kernel: #e8b931;      /* accent: maize kernel (buttons on dark, highlights) */
-  --soil: #2b2118;        /* text */
-  --soil-soft: #5c5148;   /* secondary text */
-  --mist: #f3f6f1;        /* page background */
-  --paper: #ffffff;
-  --line: #d5ddd0;
-  --blight: #b3412b;      /* disease / error */
-  --blight-soft: #f7e4df;
+  /* --- colour: brand ------------------------------------------------ */
+  --forest-950: #0e2a1f;
+  --forest-900: #14372a;   /* brand, nav, dark panels */
+  --forest-800: #1c4a37;
+  --forest-700: #265f46;
+  --leaf-700: #226b32;     /* hover for primary actions */
+  --leaf-600: #2b7d3b;     /* primary action fill (white text = 5.2:1) */
+  --leaf-500: #46a258;     /* fresh accent: fills, icons, bars */
+  --leaf-200: #cfe5cd;
+  --leaf-100: #e3efdf;
+  --leaf-50:  #f0f7ed;
+  --kernel:   #f0b823;     /* the detection-frame colour: used sparingly */
 
+  /* --- colour: neutrals --------------------------------------------- */
+  --paper:    #f7f5ee;     /* warm off-white page background */
+  --surface:  #ffffff;
+  --sand-100: #efece1;
+  --line:     #ddd9cb;
+  --line-strong: #c4bfae;
+  --ink:      #1f2421;     /* charcoal body text */
+  --ink-soft: #4d544f;     /* secondary text (7.4:1 on paper) */
+  --ink-faint:#6c726d;     /* tertiary text, 4.7:1 on paper */
+
+  /* --- colour: status ----------------------------------------------- */
+  --warn:      #8a5a00;  --warn-bg:  #fbf0d6;
+  --danger:    #a8281f;  --danger-bg:#fbe8e5;
+  --info:      #1f5f72;  --info-bg:  #e1f0f4;
+  --rain:      #2b7a8c;
+
+  /* --- type --------------------------------------------------------- */
   --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
-  --font-body: "Public Sans", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Public Sans", "Segoe UI", system-ui, -apple-system, sans-serif;
+  --fs-xs: 0.8125rem;
+  --fs-sm: 0.9375rem;
+  --fs-md: 1rem;
+  --fs-lg: 1.1875rem;
+  --fs-xl: clamp(1.4rem, 1.2rem + 0.9vw, 1.75rem);
+  --fs-2xl: clamp(1.75rem, 1.35rem + 1.8vw, 2.5rem);
+  --fs-hero: clamp(2.25rem, 1.5rem + 3.6vw, 4rem);
 
-  --step--1: 0.875rem;
-  --step-0: 1rem;
-  --step-1: 1.25rem;
-  --step-2: 1.6rem;
-  --step-3: clamp(2rem, 4.5vw, 3.2rem);
+  /* --- space / shape / depth ---------------------------------------- */
+  --sp-1: 0.25rem; --sp-2: 0.5rem; --sp-3: 0.75rem; --sp-4: 1rem;
+  --sp-5: 1.5rem;  --sp-6: 2rem;   --sp-7: 3rem;    --sp-8: 4.5rem; --sp-9: 7rem;
+  --r-sm: 6px; --r-md: 10px; --r-lg: 16px; --r-pill: 999px;
+  --shadow-1: 0 1px 2px rgba(20, 55, 42, 0.08);
+  --shadow-2: 0 8px 24px -8px rgba(20, 55, 42, 0.22);
+  --shadow-3: 0 24px 60px -20px rgba(14, 42, 31, 0.45);
 
-  --space-1: 0.5rem;
-  --space-2: 1rem;
-  --space-3: 1.5rem;
-  --space-4: 2.5rem;
-  --space-5: 4rem;
+  /* --- layout ------------------------------------------------------- */
+  --container: 72rem;
+  --sidebar-w: 16.5rem;
+  --tabbar-h: 4.25rem;
+  --topbar-h: 3.5rem;
 
-  --radius: 10px;
-  --radius-sm: 6px;
-  --container: 68rem;
+  /* --- motion ------------------------------------------------------- */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 120ms;
+  --t-med: 220ms;
+
+  color-scheme: light;
 }

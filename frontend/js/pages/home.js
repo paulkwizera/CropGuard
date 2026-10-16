@@ -1,10 +1,16 @@
 import { isLoggedIn } from "../auth.js";
-import { renderHeader } from "../ui.js";
+import { mountPublicFooter, mountPublicHeader } from "../components/shell.js";
 
-renderHeader("index.html");
+mountPublicHeader();
+mountPublicFooter();
+
 if (isLoggedIn()) {
-  const primary = document.getElementById("cta-primary");
-  primary.textContent = "Check a plant";
-  primary.href = "detect.html";
-  document.getElementById("cta-secondary").classList.add("hidden");
+  for (const id of ["cta-primary", "cta-band"]) {
+    const el = document.getElementById(id);
+    el.textContent = "Open your dashboard";
+    el.href = "dashboard.html";
+  }
+  document.getElementById("cta-secondary").hidden = true;
+  const title = document.getElementById("cta-title");
+  if (title) title.textContent = "Ready for your next check?";
 }

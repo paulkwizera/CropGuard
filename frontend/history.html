@@ -2,27 +2,66 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:wght@600;700&family=Public+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14372a">
+  <meta name="description" content="Your saved maize checks and results.">
+  <title>My checks · CropGuard</title>
+  <script>try{var l=localStorage.getItem("cropguard.lang");if(l&&l!=="en"){document.documentElement.classList.add("i18n-pending");setTimeout(function(){document.documentElement.classList.remove("i18n-pending")},2500)}}catch(e){}</script>
+  <style>.i18n-pending body{visibility:hidden}</style>
+  <script>
+  /* If the page's scripts cannot start (for example the file was opened by double-clicking it), explain what to do. */
+  (function () {
+    var onFile = location.protocol === "file:";
+    setTimeout(function () {
+      if (document.documentElement.getAttribute("data-ready")) return;
+      var d = document.createElement("div");
+      d.className = "boot-warning"; d.setAttribute("role", "alert");
+      d.innerHTML = onFile
+        ? "<strong>Open CropGuard through a small web server, not by double-clicking the file.</strong><p>Browsers block the page scripts on file:// addresses. Double-click <code>run-frontend.bat</code> (Windows) or run <code>./run-frontend.sh</code> in the project folder, or in the <code>frontend</code> folder run <code>python -m http.server 5500</code> and open <code>http://127.0.0.1:5500</code>.</p>"
+        : "<strong>This page did not start.</strong><p>Press Ctrl+Shift+R to reload. If it still looks wrong, open the browser console (F12) and check for a red error message; also make sure every file from the <code>frontend</code> folder was copied.</p>";
+      (document.body || document.documentElement).appendChild(d);
+    }, onFile ? 500 : 4000);
+  })();
+  </script>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
   <link rel="stylesheet" href="css/tokens.css">
   <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
-  <title>My checks · CropGuard</title>
+  <link rel="stylesheet" href="css/pages.css">
 </head>
-<body>
-  <header id="site-header"></header>
-  <main class="page">
-    <div class="container">
-      <div class="page-head row" style="justify-content:space-between">
-        <h1>My checks</h1><a class="btn" href="detect.html">Check a plant</a>
+<body class="app" data-page="history">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <main class="app-main" id="main" tabindex="-1">
+    <div class="page">
+      <header class="page-head">
+        <div><h1>My checks</h1><p id="history-sub">Every photo you have checked, newest first.</p></div>
+        <a class="btn" href="detect.html"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>Check a plant</a>
+      </header>
+      <div class="toolbar" id="toolbar" hidden>
+        <div class="field"><label for="filter">Show</label><select class="select" id="filter"><option value="">All results</option></select></div>
+        <div class="field"><label for="sort">Sort by</label>
+          <select class="select" id="sort"><option value="new">Newest first</option><option value="old">Oldest first</option><option value="conf">Highest confidence</option></select></div>
+        <p class="toolbar-count" id="count" aria-live="polite"></p>
       </div>
-      <div id="history-list" class="grid" aria-live="polite"></div>
-      <div id="history-empty" class="empty hidden"><p>You have not checked any plants yet.</p><a class="btn" href="detect.html">Check your first plant</a></div>
+      <div class="check-grid" id="grid" aria-live="polite" aria-busy="true"></div>
+      <div class="empty" id="empty" hidden>
+        <img class="empty-art" src="assets/images/seedling.svg" alt="" width="200" height="150">
+        <h2>No checks yet</h2>
+        <p>Photograph a maize leaf and your result will be saved here.</p>
+        <a class="btn" href="detect.html">Check your first plant</a>
+      </div>
+      <div class="empty" id="no-match" hidden><h2>Nothing matches this filter</h2><p>Try a different result type.</p><button class="btn btn--secondary" id="clear-filter" type="button">Show all results</button></div>
+      <div class="load-more"><button class="btn btn--secondary" id="load-more" type="button" hidden>Load more checks</button></div>
+
+      <dialog class="modal" id="detail" aria-labelledby="detail-title">
+        <div class="modal-head"><h2 id="detail-title">Check details</h2><button type="button" class="icon-btn" data-close aria-label="Close"><svg class="icon" aria-hidden="true"><use href="#i-x"/></svg></button></div>
+        <div class="modal-body" id="detail-body"></div>
+      </dialog>
     </div>
   </main>
-  <footer class="site-footer"><div class="container">CropGuard · maize disease detection for Rwandan farmers</div></footer>
   <script type="module" src="js/pages/history.js"></script>
 </body>
 </html>
