@@ -2,9 +2,20 @@
 import requests
 from django.conf import settings
 
-from apps.core.exceptions import ExternalServiceError
+from apps.core.exceptions import ExternalServiceError, PlaceNotFound
+
+from .districts import coords_for
 
 FORECAST_URL = "https://api.openweathermap.org/data/2.5/forecast"
+
+
+def _location_params(city: str) -> dict:
+    """Rwandan districts go by coordinates (OpenWeather doesn't know most of them);
+    anything else (a town the farmer typed) falls back to a name search in Rwanda."""
+    coords = coords_for(city)
+    if coords:
+        return {"lat": coords[0], "lon": coords[1]}
+    return {"q": f"{city},RW"}
 
 
 def fetch_forecast(city: str) -> dict:
@@ -13,13 +24,13 @@ def fetch_forecast(city: str) -> dict:
     try:
         response = requests.get(
             FORECAST_URL,
-            params={"q": f"{city},RW", "appid": settings.OPENWEATHER_API_KEY, "units": "metric"},
+            params={**_location_params(city), "appid": settings.OPENWEATHER_API_KEY, "units": "metric"},
             timeout=5,
         )
     except requests.RequestException as exc:
         raise ExternalServiceError("Weather service is unreachable.") from exc
     if response.status_code == 404:
-        raise ExternalServiceError(f"City '{city}' was not found.")
+        raise PlaceNotFound(f"'{city}' was not found. Try your district or the nearest big town.")
     if response.status_code != 200:
         raise ExternalServiceError("Weather service returned an error.")
     return response.json()
