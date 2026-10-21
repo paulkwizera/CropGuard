@@ -10,6 +10,14 @@ class ServiceUnavailable(APIException):
     default_code = "service_unavailable"
 
 
+class PlaceNotFound(APIException):
+    """The weather service does not know the place the user typed."""
+
+    status_code = status.HTTP_404_NOT_FOUND
+    default_detail = "Place not found."
+    default_code = "place_not_found"
+
+
 class ExternalServiceError(APIException):
     """A third-party API (weather, Gemini) failed or timed out."""
 

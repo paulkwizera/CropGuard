@@ -90,6 +90,7 @@ Current user's detections, newest first.
 }
 ```
 `readings` = next 24 h in 3-hour steps (8 items).
+`city` can be any of the 30 Rwandan districts (looked up by coordinates) or a nearby town name. An unknown place returns **404** `{ "detail": "..." }`.
 
 ### `POST /advisory/`
 `{ "city": "Musanze", "language": "rw" }` → **200**
