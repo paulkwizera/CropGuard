@@ -241,3 +241,6 @@ ml/datasets/
 .vscode/
 .idea/
 .DS_Store
+
+# Survey microdata: too big for GitHub (100 MB limit) and contains household-level records
+data/Microdata/

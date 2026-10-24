@@ -58,7 +58,7 @@ function translateTextNode(node) {
   const lead = raw.match(/^\s*/)[0], trail = raw.match(/\s*$/)[0];
   const out = lead + hit + trail;
   done.set(node, out);
-  node.data = out;
+  if (out !== raw) node.data = out; // never rewrite identical text: that would queue endless mutations
 }
 
 function translateAttrs(el) {
@@ -66,7 +66,7 @@ function translateAttrs(el) {
     const v = el.getAttribute?.(a);
     if (!v) continue;
     const hit = lookup(norm(v));
-    if (hit != null) el.setAttribute(a, hit);
+    if (hit != null && hit !== v) el.setAttribute(a, hit); // same value (e.g. "Notifications" in French) must not be rewritten
   }
 }
 

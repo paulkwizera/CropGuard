@@ -31,6 +31,9 @@ const PATHS = {
   chart: '<path d="M4 20V4M4 20h16"/><path d="M8.5 16v-4M13 16V8M17.5 16v-6"/>',
   layers: '<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>',
   phone: '<rect x="6.5" y="2.5" width="11" height="19" rx="2.5"/><path d="M11 18.5h2"/>',
+  message: '<path d="M20.5 15a2 2 0 0 1-2 2H8l-4.5 3.5V6a2 2 0 0 1 2-2h13a2 2 0 0 1 2 2z"/><path d="M8 9.5h8M8 12.5h5"/>',
+  book: '<path d="M12 6.5C10.5 5 8 4.5 4 4.5v13c4 0 6.5.5 8 2 1.5-1.5 4-2 8-2v-13c-4 0-6.5.5-8 2zM12 6.5v13"/>',
+  send: '<path d="M21 3 3 10.5l7 3 3 7z"/><path d="M21 3 10 13.5"/>',
   language: '<path d="M4 6h9M8.5 4v2M6 6c.4 3 2.5 5.6 5 7M12 6c-.6 3-3 6-7 8"/><path d="m13.5 20 3.6-9 3.6 9M14.7 17.2h4.8"/>',
 };
 

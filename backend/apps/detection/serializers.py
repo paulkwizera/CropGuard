@@ -6,14 +6,20 @@ from .models import Detection
 
 class DetectionSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
+    crop = serializers.CharField(required=False, default="maize")
 
     class Meta:
         model = Detection
         fields = [
-            "id", "image", "image_width", "image_height",
-            "top_label", "top_confidence", "results", "advice", "created_at",
+            "id", "crop", "image", "image_width", "image_height",
+            "status", "top_label", "top_confidence", "results", "advice", "created_at",
         ]
-        read_only_fields = [f for f in fields if f != "image"]
+        read_only_fields = [f for f in fields if f not in ("image", "crop")]
+
+    def validate_crop(self, value):
+        if value not in settings.CROP_MODELS:
+            raise serializers.ValidationError(f"Unknown crop. Choose one of: {', '.join(settings.CROP_MODELS)}.")
+        return value
 
     def validate_image(self, image):
         limit = settings.MAX_UPLOAD_MB * 1024 * 1024

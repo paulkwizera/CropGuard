@@ -6,9 +6,12 @@ class Detection(models.Model):
     """One uploaded leaf photo and what the YOLO model found in it."""
 
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="detections")
+    crop = models.CharField(max_length=20, default="maize")
     image = models.ImageField(upload_to="detections/%Y/%m/")
     image_width = models.PositiveIntegerField(null=True, blank=True)
     image_height = models.PositiveIntegerField(null=True, blank=True)
+    # "disease" (a disease was found), "healthy" (the model recognised a healthy leaf) or "none" (nothing detected)
+    status = models.CharField(max_length=10, default="none")
     top_label = models.CharField(max_length=100, blank=True)
     top_confidence = models.FloatField(null=True, blank=True)
     # list of {"label": str, "confidence": float, "bbox": [x1, y1, x2, y2]}

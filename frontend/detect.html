@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#14372a">
-  <meta name="description" content="Upload a photo of a maize leaf and see what the model finds.">
+  <meta name="description" content="Upload a photo of a maize or cassava leaf and see what the model finds.">
   <title>Check a plant · CropGuard</title>
   <script>try{var l=localStorage.getItem("cropguard.lang");if(l&&l!=="en"){document.documentElement.classList.add("i18n-pending");setTimeout(function(){document.documentElement.classList.remove("i18n-pending")},2500)}}catch(e){}</script>
   <style>.i18n-pending body{visibility:hidden}</style>
@@ -31,13 +31,14 @@
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/story.css">
 </head>
 <body class="app" data-page="detect">
   <a class="skip-link" href="#main">Skip to main content</a>
   <main class="app-main" id="main" tabindex="-1">
     <div class="page">
       <header class="page-head">
-        <div><h1>Check a plant</h1><p>Photograph one maize leaf and see what the model finds.</p></div>
+        <div><h1>Check a plant</h1><p>Photograph one leaf and see what the model finds.</p></div>
       </header>
       <div class="detect-layout">
         <section class="panel detect-main" aria-label="Plant check">
@@ -48,9 +49,14 @@
           </ol>
 
           <div id="stage-photo">
+            <fieldset class="crop-picker">
+              <legend class="label">Which crop is it?</legend>
+              <div class="segmented" id="crop-seg" role="radiogroup" aria-label="Crop"></div>
+              <p class="hint" id="crop-note" hidden>The cassava detector is still being trained. It will switch on here as soon as it is ready.</p>
+            </fieldset>
             <div class="dropzone frame frame--leaf" id="dropzone">
               <span class="dz-icon"><svg class="icon icon--lg" aria-hidden="true"><use href="#i-upload"/></svg></span>
-              <h2>Add a photo of a maize leaf</h2>
+              <h2>Add a photo of a leaf</h2>
               <p class="muted">Drag a photo here, or choose one below.</p>
               <div class="row dz-actions">
                 <button type="button" class="btn" id="camera-btn"><svg class="icon" aria-hidden="true"><use href="#i-camera"/></svg>Take a photo</button>

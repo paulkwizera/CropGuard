@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#14372a">
-  <meta name="description" content="Your saved maize checks and results.">
+  <meta name="description" content="Your saved checks and results.">
   <title>My checks · CropGuard</title>
   <script>try{var l=localStorage.getItem("cropguard.lang");if(l&&l!=="en"){document.documentElement.classList.add("i18n-pending");setTimeout(function(){document.documentElement.classList.remove("i18n-pending")},2500)}}catch(e){}</script>
   <style>.i18n-pending body{visibility:hidden}</style>
@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/story.css">
 </head>
 <body class="app" data-page="history">
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -50,7 +51,7 @@
       <div class="empty" id="empty" hidden>
         <img class="empty-art" src="assets/images/seedling.svg" alt="" width="200" height="150">
         <h2>No checks yet</h2>
-        <p>Photograph a maize leaf and your result will be saved here.</p>
+        <p>Photograph a leaf and your result will be saved here.</p>
         <a class="btn" href="detect.html">Check your first plant</a>
       </div>
       <div class="empty" id="no-match" hidden><h2>Nothing matches this filter</h2><p>Try a different result type.</p><button class="btn btn--secondary" id="clear-filter" type="button">Show all results</button></div>

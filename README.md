@@ -1,72 +1,74 @@
 # CropGuard
 
-A web app that helps Rwandan farmers diagnose **maize leaf diseases** from a photo, get AI treatment advice, and get a 24-hour weather plan (irrigate? spray?).
+A web app that helps Rwandan farmers check **maize and cassava** leaves for disease from a photo, get AI treatment advice, ask an AI assistant any farming question, and get a 24-hour weather plan (irrigate? spray?) in Kinyarwanda, English or Français.
 
-**Stack:** HTML/CSS/JavaScript frontend · Django REST API · MongoDB · YOLOv8 (ultralytics) · Gemini + OpenWeatherMap
+**Stack:** HTML/CSS/JavaScript frontend · Django REST API · MongoDB · YOLOv8 detectors · Gemini + OpenWeatherMap
 
 ## Project layout
 
 ```
 CropGuard/
 ├── backend/                 Django REST API  (teammate)
-│   ├── config/              settings, urls, wsgi/asgi
-│   ├── apps/
-│   │   ├── core/            health check, shared exceptions
-│   │   ├── accounts/        farmer accounts + JWT login
-│   │   ├── detection/       upload photo → YOLO → saved results
-│   │   │   └── services/yolo.py     model loading & inference
-│   │   └── advisory/        weather + Gemini advice
-│   │       └── services/            weather.py, advisor.py
-│   ├── mongo_migrations/    required by django-mongodb-backend
-│   ├── manage.py
-│   └── requirements.txt
+│   ├── config/              settings, urls
+│   └── apps/
+│       ├── accounts/        farmer accounts + JWT login
+│       ├── detection/       photo -> YOLO -> saved result (one model per crop)
+│       │   ├── crops.py            which crops exist, model files, readable disease names
+│       │   └── services/yolo.py    model loading and inference
+│       ├── advisory/        weather + Gemini advice
+│       ├── assistant/       "Ask the AI": farming Q&A chat (Gemini)
+│       └── core/            health check, shared exceptions
 ├── frontend/                HTML + CSS + JS, no build step  (you)
-│   ├── index login register dashboard detect history advisory account  (.html)
-│   ├── css/                 tokens · base · layout · components · pages
-│   └── js/
-│       ├── config.js        API URL + USE_MOCK switch
-│       ├── api.js           every backend call lives here
-│       ├── components/      shell, icons, forms, dialog, chart, …
-│       ├── mock.js          fake data so you can work before the API exists
-│       ├── auth.js · ui.js  token storage, shared header, toasts, helpers
-│       └── pages/           one script per page
-├── ml/                      model weights, training samples, legacy scripts
-├── docs/
-│   ├── API.md               ← the contract between frontend and backend
-│   └── GIT_WORKFLOW.md      branches and rules for working as a pair
-├── .github/                 CI, PR template, CODEOWNERS
+│   ├── index, story, login, register, dashboard, detect, history, advisory, assistant, account  (.html)
+│   ├── css/  js/  assets/   see frontend/README.md
+│   └── assets/data/story.json   survey numbers behind the "Our story" charts
+├── ml/
+│   ├── weights/best.pt      maize detector       (classes MLB, MSV)
+│   ├── weights/cassava.pt   cassava detector     (3 diseases + Healthy)
+│   └── labels.json          class code -> readable name
+├── data/                    survey microdata (NOT in Git) and the script that turns it into story.json
+├── docs/                    API.md (the contract) and GIT_WORKFLOW.md
+├── run-backend.bat/.sh      starts the backend
+├── run-frontend.bat/.sh     starts the frontend
 ├── docker-compose.yml       local MongoDB
-├── .env.example             copy to .env
-└── README.md
+└── .env.example             copy to .env
 ```
 
 ## Run it locally
 
-### 1. Backend (needs Python 3.12 and MongoDB)
-```bash
-cp .env.example .env                 # then fill in the keys you have
-docker compose up -d                 # starts MongoDB (or use a MongoDB Atlas URI in .env)
+You need two things running: the **backend** (the API and the detectors) and the **frontend** (the pages).
 
-cd backend
-python -m venv venv
-source venv/bin/activate             # Windows: venv\Scripts\activate
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py createsuperuser     # optional, for /admin/
-python manage.py runserver           # http://127.0.0.1:8000/api/health/
+### 1. MongoDB and keys
+```bash
+cp .env.example .env        # fill in GOOGLE_API_KEY and OPENWEATHER_API_KEY
+docker compose up -d        # MongoDB (or put a MongoDB Atlas link in .env)
 ```
 
-### 2. Frontend (no install)
-Double-click **`run-frontend.bat`** (Windows) or run `./run-frontend.sh` (Mac/Linux). It starts a small server and opens http://127.0.0.1:5500.
-(or `cd frontend && python -m http.server 5500`, or the VS Code **Live Server** extension).
+### 2. Backend
+Double-click **`run-backend.bat`** (Windows) or run `./run-backend.sh`. It creates the virtual environment, installs the requirements, runs the migrations and starts the API at http://127.0.0.1:8000. (The first install is large because it includes PyTorch for the detectors.)
+
+Check the maize detector on a real photo, without the website:
+```bash
+cd backend && python manage.py try_detector ../path/to/maize-leaf.jpg
+cd backend && python manage.py try_detector ../path/to/cassava-leaf.jpg --crop cassava
+```
+
+### 3. Frontend
+Double-click **`run-frontend.bat`** (Windows) or run `./run-frontend.sh`. It opens http://127.0.0.1:5500.
 **Do not open the .html files by double-clicking them**: browsers block the page scripts on `file://` addresses and the pages look broken.
 
-`frontend/js/config.js` starts with `USE_MOCK: true`, so every page works with sample data (add `?seed=1` to preload sample checks). Set it to `false` once the backend is running. The interface is available in Kinyarwanda, English and Français (see the *Languages* section of [`frontend/README.md`](frontend/README.md)).
+The frontend talks to the real backend by default. To look around with sample data and no backend, add `?mock=1` to any page address (`?mock=0` to leave demo mode).
 
-### 3. Tests (backend)
+### 4. Tests (backend)
 ```bash
 cd backend && python manage.py test
 ```
+
+## What each part does
+- **Check a plant:** choose Maize or Cassava, upload a photo, see the framed disease (or a healthy leaf) and ask for treatment advice. A crop switches from "Coming soon" to available by itself when its weights file exists in `ml/weights/`.
+- **Weather advice:** 24-hour forecast chart plus advice, with Kinyarwanda / English / Français tabs right on the result.
+- **Ask the AI:** farming questions answered by Gemini in the farmer's language. The conversation stays in the browser; the server stores nothing.
+- **Our story:** the case for CropGuard, drawn from the AHS2024 survey. Rebuild its numbers with `python data/build_story_data.py` (see `data/README.md`).
 
 ## Who works where
 | Person | Folder | Reads | Never edits without a PR |
@@ -76,8 +78,8 @@ cd backend && python manage.py test
 
 See [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) for the branch and pull-request routine.
 
-## Backend to-do (suggested order)
-1. Run it against a real MongoDB: `migrate`, then the tests in `apps/*/tests.py` (they were written but not yet run against a live database).
-2. Confirm the detection flow end-to-end with `ml/weights/best.pt` and tune `YOLO_CONF`.
-3. Add rate limiting on the AI endpoints, and a `DELETE` that also removes the image file.
+## Next steps (suggested)
+1. Run the backend against a real MongoDB: `migrate`, then `python manage.py test` (the database tests have not been run against a live MongoDB yet).
+2. Try both detectors on real field photos with `try_detector` and tune `YOLO_CONF` in `.env`.
+3. Add rate limiting on the weather endpoint, and make `DELETE` also remove the image file.
 4. Deployment settings (`DJANGO_DEBUG=False`, `ALLOWED_HOSTS`, Gunicorn, media storage).

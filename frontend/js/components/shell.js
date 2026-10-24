@@ -8,12 +8,14 @@ import { initI18n } from "../i18n.js";
 import { mountLangSwitch, promptForLanguage } from "./lang-ui.js";
 
 const brand = (href) => `<a class="brand" href="${href}" aria-label="CropGuard home">${BRAND_MARK}<span>Crop<b>Guard</b></span></a>`;
-const demoBadge = () => (CONFIG.USE_MOCK ? `<span class="badge badge--demo" title="Showing sample data. Set USE_MOCK to false in js/config.js to use the real API.">Demo data</span>` : "");
+const demoBadge = () => (CONFIG.USE_MOCK ? `<span class="badge badge--demo" title="Showing sample data without a backend. Add ?mock=0 to the address to use the real backend.">Demo data</span>` : "");
 
 const NAV = [
   { id: "dashboard", href: "dashboard.html", label: "Home", icon: "home" },
   { id: "history", href: "history.html", label: "My checks", icon: "history" },
   { id: "advisory", href: "advisory.html", label: "Weather advice", icon: "cloud" },
+  { id: "assistant", href: "assistant.html", label: "Ask the AI", icon: "message" },
+  { id: "story", href: "story.html", label: "Our story", icon: "book" },
 ];
 
 const cur = (active, id) => (active === id ? ' aria-current="page"' : "");
@@ -32,6 +34,7 @@ export function mountPublicHeader(active = "") {
     <span data-lang-switch></span>
     <button class="icon-btn menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav" aria-label="Open menu">${icon("menu")}</button>
     <nav class="site-nav" id="site-nav" aria-label="Main">
+      <a href="story.html" ${active === "story" ? 'aria-current="page"' : ""}>Our story</a>
       <a href="index.html#how">How it works</a>
       <a href="index.html#features">Features</a>
       ${signedIn
@@ -58,7 +61,7 @@ export function mountPublicFooter() {
   host.className = "site-footer";
   host.innerHTML = `<div class="container">
     ${brand("index.html")}
-    <p style="margin:0">Maize disease detection for Rwandan farmers.</p>
+    <p style="margin:0">Maize and cassava disease detection for Rwandan farmers.</p>
     <nav aria-label="Footer"><a href="login.html">Sign in</a><a href="register.html">Create account</a></nav></div>`;
 }
 
@@ -85,15 +88,15 @@ export function mountShell(active) {
       <button type="button" class="btn btn--ghost-light btn--sm" data-logout>${icon("logout", "icon--sm")}Sign out</button>
     </div></aside>`;
 
-  const topbar = `<header class="topbar on-dark">${brand("dashboard.html")}<div class="topbar-tools">${demoBadge()}<span data-lang-switch></span></div></header>`;
+  const topbar = `<header class="topbar on-dark">${brand("dashboard.html")}<div class="topbar-tools">${demoBadge()}<span data-lang-switch></span><a class="avatar avatar--link" href="account.html" aria-label="Account"${cur(active, "account")} data-avatar>${escapeHtml(initial(name))}</a></div></header>`;
 
   const tab = (href, id, label, ic) => `<a href="${href}"${cur(active, id)}>${icon(ic)}<span class="tab-label">${label}</span></a>`;
   const tabbar = `<nav class="tabbar" aria-label="Main">
     ${tab("dashboard.html", "dashboard", "Home", "home")}
     ${tab("history.html", "history", "History", "history")}
     <a class="tab-primary" href="detect.html"${cur(active, "detect")}><span class="tab-disc">${icon("camera")}</span><span class="tab-label">Check</span></a>
+    ${tab("assistant.html", "assistant", "Ask AI", "message")}
     ${tab("advisory.html", "advisory", "Weather", "cloud")}
-    ${tab("account.html", "account", "Account", "user")}
   </nav>`;
 
   const main = document.getElementById("main");
@@ -112,7 +115,7 @@ export function mountShell(active) {
   // fill in the real username once the profile is available
   getMe().then((m) => {
     document.querySelector("[data-username]").textContent = m.username;
-    document.querySelector("[data-avatar]").textContent = initial(m.username);
+    document.querySelectorAll("[data-avatar]").forEach((el) => { el.textContent = initial(m.username); });
   }).catch(() => {});
 }
 

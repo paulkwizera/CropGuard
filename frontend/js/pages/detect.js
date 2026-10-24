@@ -6,6 +6,7 @@ import { escapeHtml, percent, renderAdvice, LANGUAGES } from "../components/form
 import { icon } from "../components/icons.js";
 import { toast } from "../components/toast.js";
 import { setBusy } from "../components/forms.js";
+import { cropName, isHealthy } from "../components/checks.js";
 import { adviceLang, t } from "../i18n.js";
 
 if (requireAuth()) init();
@@ -20,9 +21,18 @@ function init() {
   let preview = null;   // object URL for the preview
   let current = null;   // detection returned by the API
   let adviceText = "";
+  let crop = "maize";   // which detector to use
 
   $("advice-lang").innerHTML = LANGUAGES.map((l) => `<option value="${l.code}">${l.label}</option>`).join("");
   $("advice-lang").value = adviceLang();
+
+  // ---- which crop? (cassava stays "coming soon" until its model file exists on the server)
+  const FALLBACK_CROPS = [{ id: "maize", name: "Maize", available: true }];
+  api.crops().catch(() => FALLBACK_CROPS).then((list) => {
+    $("crop-seg").innerHTML = list.map((c) => `<label><input type="radio" name="crop" value="${c.id}" ${c.available ? "" : "disabled"} ${c.id === crop ? "checked" : ""}><span>${escapeHtml(c.name)}${c.available ? "" : ` <em class="soon">Coming soon</em>`}</span></label>`).join("");
+    $("crop-note").hidden = list.every((c) => c.available);
+  });
+  $("crop-seg").addEventListener("change", (e) => { crop = e.target.value; });
 
   function show(stage, step = "photo") {
     stages.forEach((s) => ($(`stage-${s}`).hidden = s !== stage));
@@ -75,7 +85,7 @@ function init() {
       current = await api.createDetection(file, (p) => {
         bar.firstElementChild.style.width = `${Math.round(p * 100)}%`;
         if (p >= 1) { $("busy-title").textContent = "Checking the leaf…"; bar.classList.add("is-indeterminate"); }
-      });
+      }, crop);
       await renderResult(current);
     } catch (err) {
       $("error-text").textContent = err.message;
@@ -94,6 +104,15 @@ function init() {
     const summary = $("result-summary");
     $("advice-out").hidden = true; $("copy-advice").hidden = true; adviceText = "";
 
+    if (isHealthy(d)) {
+      summary.innerHTML = `<span class="badge badge--ok">${icon("check-circle", "icon--sm")}Looks healthy</span> <span class="badge">${escapeHtml(cropName(d))}</span>
+        <h2 class="result-title">${escapeHtml(d.top_label)}</h2>
+        <p class="conf-line"><strong>${percent(d.top_confidence)}</strong> <span class="muted">confidence</span></p>
+        <div class="meter" role="img" aria-label="${escapeHtml(t("Confidence {pct}", { pct: percent(d.top_confidence) }))}"><span style="width:${percent(d.top_confidence)}"></span></div>
+        <p class="muted" style="margin-top:1rem">No disease was detected on this leaf. Check a few more leaves from different parts of the field to be sure.</p>`;
+      $("advice-section").hidden = true;
+      return;
+    }
     if (!d.top_label) {
       summary.innerHTML = `<span class="badge badge--warn">${icon("info", "icon--sm")}Nothing detected</span>
         <h2 class="result-title">No disease found</h2>
@@ -102,7 +121,7 @@ function init() {
       return;
     }
     const others = (d.results || []).slice(1, 4);
-    summary.innerHTML = `<span class="badge badge--issue">${icon("alert", "icon--sm")}Problem detected</span>
+    summary.innerHTML = `<span class="badge badge--issue">${icon("alert", "icon--sm")}Problem detected</span> <span class="badge">${escapeHtml(cropName(d))}</span>
       <h2 class="result-title">${escapeHtml(d.top_label)}</h2>
       <p class="conf-line"><strong>${percent(d.top_confidence)}</strong> <span class="muted">confidence</span></p>
       <div class="meter" role="img" aria-label="${escapeHtml(t("Confidence {pct}", { pct: percent(d.top_confidence) }))}"><span style="width:${percent(d.top_confidence)}"></span></div>

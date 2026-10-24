@@ -46,23 +46,36 @@ The detection object:
 ```json
 {
   "id": "6702f1c2a3b4c5d6e7f80912",
+  "crop": "maize",
+  "status": "disease",
   "image": "http://127.0.0.1:8000/media/detections/2026/10/leaf.jpg",
   "image_width": 1280,
   "image_height": 960,
-  "top_label": "Northern Leaf Blight",
+  "top_label": "Maize Leaf Blight",
   "top_confidence": 0.91,
   "results": [
-    { "label": "Northern Leaf Blight", "confidence": 0.91, "bbox": [120.5, 80.0, 640.2, 500.9] }
+    { "code": "MLB", "label": "Maize Leaf Blight", "confidence": 0.91, "bbox": [120.5, 80.0, 640.2, 500.9] }
   ],
   "advice": "",
   "created_at": "2026-10-08T10:15:30+02:00"
 }
 ```
 - `bbox` = `[x1, y1, x2, y2]` in **pixels of the original image** (`image_width` x `image_height`)
-- Nothing found above the confidence threshold → `results: []`, `top_label: ""`, `top_confidence: null`
+- `code` is the class stored in the model file (`MLB`, `MSV`); `label` is the readable name from `ml/labels.json` (what the farmer sees)
+- `crop` is `maize` or `cassava` (see *crops* below)
+- `status` is `disease` (a disease was found), `healthy` (the cassava model recognised a healthy leaf) or `none` (nothing detected). A disease always wins over a healthy region of the same photo. `top_label` is the headline result.
+- Each result also has `healthy` (true for the healthy class)
+- Nothing found above the confidence threshold → `status: "none"`, `results: []`, `top_label: ""`, `top_confidence: null`
+
+### `GET /detections/crops/`
+Which crops can be checked right now. A crop becomes `available` automatically when its weights file exists (`ml/weights/<crop>.pt`).
+```json
+[ { "id": "maize", "name": "Maize", "available": true }, { "id": "cassava", "name": "Cassava", "available": false } ]
+```
 
 ### `POST /detections/` (multipart)
-Field `image` (JPG/PNG, max 8 MB). **201** → detection object. The model runs inside this request.
+Field `image` (JPG/PNG, max 8 MB) and optional `crop` (`maize` default, or `cassava`). **201** → detection object. The model runs inside this request.
+**503** `{ "detail": "The cassava detector is not available yet." }` when that crop's model file is missing.
 
 ### `GET /detections/?page=1`
 Current user's detections, newest first.
@@ -72,7 +85,7 @@ Current user's detections, newest first.
 
 ### `POST /detections/{id}/advice/`
 `{ "language": "rw" }` (`rw` | `en` | `fr`) → **200** detection object with `advice` filled in.
-**400** if nothing was detected.
+**400** unless `status` is `disease`.
 
 ---
 
@@ -95,6 +108,24 @@ Current user's detections, newest first.
 ### `POST /advisory/`
 `{ "city": "Musanze", "language": "rw" }` → **200**
 `{ "city", "language", "weather": { ...same as above without city... }, "advisory": "text written by the AI" }`
+
+---
+
+## Assistant (farming questions, Gemini)
+
+### `POST /assistant/chat/`
+The browser keeps the conversation and sends it each time; the server stores nothing.
+```json
+{
+  "messages": [ { "role": "user", "content": "How can I get more maize from my field?" } ],
+  "language": "rw",
+  "context": { "district": "Musanze", "crop": "maize", "last_check": "Maize Streak Virus" }
+}
+```
+- `messages`: 1–40 items, `role` is `user` or `assistant`, `content` max 2000 characters; the **last** message must be from the user (only the latest 12 are sent to the model)
+- `language`: `rw` | `en` | `fr` (default `rw`); `context` is optional
+- **200** → `{ "reply": "text written by the AI", "language": "rw" }`
+- **400** invalid input · **429** too many questions (default 30 per minute per user, `ASSISTANT_RATE`) · **502** the AI service failed
 
 ---
 

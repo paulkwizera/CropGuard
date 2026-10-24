@@ -38,11 +38,11 @@ async function init() {
     stat("Problems found", issues.length, partial ? t("in your latest {n}", { n: results.length }) : count ? t("of {n} checks", { n: count }) : "") +
     stat("Most common", ranked[0] ? escapeHtml(ranked[0][0]) : "None yet", ranked[0] ? t(ranked[0][1] === 1 ? "{n} time" : "{n} times", { n: ranked[0][1] }) : "") +
     stat("Last check", results[0] ? formatDate(results[0].created_at, { withTime: false }) : "None yet");
-  $("greeting-sub").textContent = count ? "Here is how your maize checks are going." : "Start with a photo of one maize leaf.";
+  $("greeting-sub").textContent = count ? "Here is how your checks are going." : "Start with a photo of one leaf.";
 
   // --- recent checks
   if (!count) {
-    $("recent").innerHTML = `<div class="empty"><img class="empty-art" src="assets/images/seedling.svg" alt="" width="200" height="150"><h2>No checks yet</h2><p>Photograph a maize leaf and your first result will appear here.</p><a class="btn" href="detect.html">${icon("camera")}Check your first plant</a></div>`;
+    $("recent").innerHTML = `<div class="empty"><img class="empty-art" src="assets/images/seedling.svg" alt="" width="200" height="150"><h2>No checks yet</h2><p>Photograph a leaf and your first result will appear here.</p><a class="btn" href="detect.html">${icon("camera")}Check your first plant</a></div>`;
   } else {
     $("recent").innerHTML = `<ul class="check-list">${results.slice(0, 5).map((d) => `
       <li><a class="check-row" href="history.html?open=${encodeURIComponent(d.id)}">

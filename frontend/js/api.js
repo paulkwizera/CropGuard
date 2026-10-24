@@ -98,7 +98,8 @@ const real = {
   me: () => request("/auth/me/"),
   updateMe: (data) => request("/auth/me/", { method: "PATCH", json: data }),
 
-  createDetection: (file, onProgress) => { const f = new FormData(); f.append("image", file); return upload("/detections/", f, onProgress); },
+  crops: () => request("/detections/crops/"),
+  createDetection: (file, onProgress, crop = "maize") => { const f = new FormData(); f.append("image", file); f.append("crop", crop); return upload("/detections/", f, onProgress); },
   listDetections: (page = 1) => request(`/detections/?page=${page}`),
   getDetection: (id) => request(`/detections/${id}/`),
   deleteDetection: (id) => request(`/detections/${id}/`, { method: "DELETE" }),
@@ -106,6 +107,7 @@ const real = {
 
   weather: (city) => request(`/advisory/weather/?city=${encodeURIComponent(city)}`),
   advisory: (city, language) => request("/advisory/", { method: "POST", json: { city, language } }),
+  assistantChat: (messages, language, context) => request("/assistant/chat/", { method: "POST", json: { messages, language, context } }),
   health: () => request("/health/", { auth: false }),
 };
 

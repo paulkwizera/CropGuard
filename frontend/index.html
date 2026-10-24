@@ -4,8 +4,8 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <meta name="theme-color" content="#14372a">
-  <meta name="description" content="Photograph a maize leaf, see what is wrong, and get treatment and weather advice in Kinyarwanda, English or French.">
-  <title>CropGuard · Maize disease detection for Rwandan farmers</title>
+  <meta name="description" content="Photograph a maize or cassava leaf, see what is wrong, and get treatment and weather advice in Kinyarwanda, English or French.">
+  <title>CropGuard · Maize and cassava disease detection for Rwandan farmers</title>
   <script>try{var l=localStorage.getItem("cropguard.lang");if(l&&l!=="en"){document.documentElement.classList.add("i18n-pending");setTimeout(function(){document.documentElement.classList.remove("i18n-pending")},2500)}}catch(e){}</script>
   <style>.i18n-pending body{visibility:hidden}</style>
   <script>
@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/story.css">
 </head>
 <body class="public" data-page="home">
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -40,7 +41,7 @@
       <div class="container hero-grid">
         <div class="hero-copy">
           <h1>Know what is wrong with your maize before it spreads.</h1>
-          <p class="lead">Photograph a maize leaf. CropGuard marks the damaged area, suggests what to do about it, and checks the weather so you know when to irrigate or spray.</p>
+          <p class="lead">Photograph a maize or cassava leaf. CropGuard marks the damaged area, suggests what to do about it, and checks the weather so you know when to irrigate or spray.</p>
           <div class="row hero-cta">
             <a class="btn btn--lg" id="cta-primary" href="register.html">Create a free account</a>
             <a class="btn btn--lg btn--secondary" id="cta-secondary" href="login.html">Sign in</a>
@@ -104,18 +105,34 @@
       <div class="container split">
         <div>
           <h2 id="feat-title" class="section-heading">Made for the field, not the office</h2>
-          <p class="muted">CropGuard is designed for smallholder maize farmers in Rwanda: quick on a phone, light on mobile data, and clear without technical words.</p>
+          <p class="muted">CropGuard is designed for smallholder farmers in Rwanda: quick on a phone, light on mobile data, and clear without technical words.</p>
           <div class="note">
             <svg class="icon" aria-hidden="true"><use href="#i-info"/></svg>
-            <p><strong>A helper, not a laboratory.</strong> CropGuard gives a computer estimate from a photo and currently supports maize only. For a severe outbreak, confirm with your local agronomist.</p>
+            <p><strong>A helper, not a laboratory.</strong> CropGuard gives a computer estimate from a photo and currently supports maize and cassava only. For a severe outbreak, confirm with your local agronomist.</p>
           </div>
         </div>
         <ul class="feature-list">
           <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-phone"/></svg></span><div><h3>Light on data</h3><p>Photos are shrunk on your phone before they are sent, so checks stay fast on a weak connection.</p></div></li>
           <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-language"/></svg></span><div><h3>Your language</h3><p>Treatment and weather advice in Kinyarwanda, English or Français.</p></div></li>
           <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-cloud"/></svg></span><div><h3>Weather plan</h3><p>The next 24 hours for your district, with advice on irrigation and spraying.</p></div></li>
+          <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg></span><div><h3>Maize and cassava</h3><p>Two detectors today: maize leaf blight and streak virus, and cassava mosaic, green mottle and bacterial blight, with a healthy-leaf check.</p></div></li>
+          <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-message"/></svg></span><div><h3>Ask the AI</h3><p>Ask any farming question, from seeds and spacing to storage, and get a clear answer in your language.</p></div></li>
           <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-history"/></svg></span><div><h3>Every check saved</h3><p>Look back at earlier photos and results to see how your field is changing.</p></div></li>
         </ul>
+      </div>
+    </section>
+
+    <section class="section story-teaser reveal" aria-labelledby="story-title">
+      <div class="container split">
+        <div>
+          <h2 id="story-title" class="section-heading">Why we built it</h2>
+          <p class="muted">We studied Rwanda's national agricultural household survey. Maize grows on almost every farm, many farmers report smaller harvests than last season, and almost none get advice by phone.</p>
+          <a class="btn" href="story.html">Read our story</a>
+        </div>
+        <dl class="big-stats big-stats--compact">
+          <div><dt>Grow maize</dt><dd><span data-bind="maize.share" data-fmt="pct"></span><small>of farming households</small></dd></div>
+          <div><dt>Smaller harvest</dt><dd><span data-bind="production_change.all.down" data-fmt="pct"></span><small>of crop plots, compared with the season before</small></dd></div>
+        </dl>
       </div>
     </section>
 

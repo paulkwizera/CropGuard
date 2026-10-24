@@ -44,6 +44,7 @@ INSTALLED_APPS = [
     "apps.accounts",
     "apps.detection",
     "apps.advisory",
+    "apps.assistant",
 ]
 
 MIDDLEWARE = [
@@ -104,6 +105,7 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
+    "DEFAULT_THROTTLE_RATES": {"assistant": os.getenv("ASSISTANT_RATE", "30/min")},
 }
 
 SIMPLE_JWT = {
@@ -132,9 +134,22 @@ USE_I18N = True
 USE_TZ = True
 
 # --- ML / AI integrations ---------------------------------------------------
-YOLO_MODEL_PATH = Path(os.getenv("YOLO_MODEL_PATH", REPO_ROOT / "ml" / "weights" / "best.pt"))
-YOLO_CONF = float(os.getenv("YOLO_CONF", "0.8"))
-YOLO_IMGSZ = int(os.getenv("YOLO_IMGSZ", "320"))
+# One detector per crop. A crop is "available" as soon as its weights file exists, so the
+# cassava model switches on by itself the day ml/weights/cassava.pt is added.
+CROP_MODELS = {
+    "maize": {
+        "name": "Maize",
+        # YOLO_MODEL_PATH is the old name for the maize model and still works
+        "path": Path(os.getenv("YOLO_MODEL_MAIZE_PATH") or os.getenv("YOLO_MODEL_PATH") or REPO_ROOT / "ml" / "weights" / "best.pt"),
+    },
+    "cassava": {
+        "name": "Cassava",
+        "path": Path(os.getenv("YOLO_MODEL_CASSAVA_PATH") or REPO_ROOT / "ml" / "weights" / "cassava.pt"),
+    },
+}
+LABELS_PATH = Path(os.getenv("LABELS_PATH") or REPO_ROOT / "ml" / "labels.json")
+YOLO_CONF = float(os.getenv("YOLO_CONF", "0.5"))    # minimum confidence to report a detection
+YOLO_IMGSZ = int(os.getenv("YOLO_IMGSZ", "640"))    # the maize model was trained at 640
 MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "8"))
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")

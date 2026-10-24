@@ -21,7 +21,7 @@ def _generate(prompt: str) -> str:
 
 def weather_advisory(city: str, summary: dict, language: str = "rw") -> str:
     prompt = f"""
-You are an expert agricultural advisor assisting smallholder maize farmers in Rwanda.
+You are an expert agricultural advisor assisting smallholder farmers in Rwanda (mainly maize and cassava).
 
 Location: {city}, Rwanda
 Forecast for the next 24 hours (3-hour steps): {summary['readings']}
@@ -35,13 +35,15 @@ Instructions:
     return _generate(prompt)
 
 
-def disease_advice(disease: str, language: str = "rw") -> str:
+def disease_advice(disease: str, language: str = "rw", crop: str = "maize") -> str:
     prompt = f"""
-You are an expert agronomist helping smallholder maize farmers in Rwanda.
-A detection model found this maize problem: "{disease}".
+You are an expert agronomist helping smallholder {crop} farmers in Rwanda.
+A detection model found this {crop} problem: "{disease}".
 
 Explain in simple words: what it is, how to confirm it in the field, how to treat it with
 affordable and locally available options, and how to stop it spreading next season.
+If a pesticide is mentioned, tell the farmer to follow the product label and ask their local
+agronomist or agro-dealer for the right product and dose; do not invent exact doses.
 Write the entire answer in {LANGUAGE_NAMES.get(language, 'English')}. Keep it under 200 words.
 """
     return _generate(prompt)

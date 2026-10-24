@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14372a">
+  <meta name="description" content="Why CropGuard exists: what Rwandan farmers grow, what is going wrong, and who is helping, shown with data from the AHS2024 survey.">
+  <title>Our story · CropGuard</title>
+  <script>try{var l=localStorage.getItem("cropguard.lang");if(l&&l!=="en"){document.documentElement.classList.add("i18n-pending");setTimeout(function(){document.documentElement.classList.remove("i18n-pending")},2500)}}catch(e){}</script>
+  <style>.i18n-pending body{visibility:hidden}</style>
+  <script>
+  /* If the page's scripts cannot start (for example the file was opened by double-clicking it), explain what to do. */
+  (function () {
+    var onFile = location.protocol === "file:";
+    setTimeout(function () {
+      if (document.documentElement.getAttribute("data-ready")) return;
+      var d = document.createElement("div");
+      d.className = "boot-warning"; d.setAttribute("role", "alert");
+      d.innerHTML = onFile
+        ? "<strong>Open CropGuard through a small web server, not by double-clicking the file.</strong><p>Browsers block the page scripts on file:// addresses. Double-click <code>run-frontend.bat</code> (Windows) or run <code>./run-frontend.sh</code> in the project folder, or in the <code>frontend</code> folder run <code>python -m http.server 5500</code> and open <code>http://127.0.0.1:5500</code>.</p>"
+        : "<strong>This page did not start.</strong><p>Press Ctrl+Shift+R to reload. If it still looks wrong, open the browser console (F12) and check for a red error message; also make sure every file from the <code>frontend</code> folder was copied.</p>";
+      (document.body || document.documentElement).appendChild(d);
+    }, onFile ? 500 : 4000);
+  })();
+  </script>
+  <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+  <link rel="preload" href="assets/fonts/public-sans.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="preload" href="assets/fonts/bricolage-grotesque.woff2" as="font" type="font/woff2" crossorigin>
+  <link rel="stylesheet" href="css/tokens.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/layout.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/story.css">
+</head>
+<body class="public" data-page="story">
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <header id="site-header"></header>
+  <main id="main" tabindex="-1">
+    <section class="story-hero">
+      <div class="container">
+        <p class="kicker">Our story</p>
+        <h1>Behind every harvest is a decision made without enough information.</h1>
+        <p class="lead">Rwanda's farmers decide when to plant, which seed to use and when to spray, often with little advice and no way to see a disease early. We studied the national agricultural household survey (AHS2024) to see what is really happening on the farm. This is what the numbers say, and why we built CropGuard.</p>
+        <dl class="big-stats">
+          <div><dt>Grow maize</dt><dd><span data-bind="maize.share" data-fmt="pct"></span><small>of farming households</small></dd></div>
+          <div><dt>Smaller harvest</dt><dd><span data-bind="production_change.all.down" data-fmt="pct"></span><small>of crop plots, compared with the season before</small></dd></div>
+          <div><dt>Advice by phone</dt><dd><span data-bind="advice.via_phone_message_households" data-fmt="int"></span><small>households received any</small></dd></div>
+        </dl>
+        <p class="source-line"><span>Survey sample:</span> <strong data-bind="households" data-fmt="int"></strong> <span>farming households (AHS2024)</span></p>
+      </div>
+    </section>
+    <section class="chapter reveal" id="grown" aria-labelledby="grown-title">
+      <div class="container chapter-grid">
+        <div class="chapter-text">
+          <p class="chapter-label"><span class="chapter-no" aria-hidden="true">1</span>What Rwanda grows</p>
+          <h2 id="grown-title">Maize is on almost every farm.</h2>
+          <p>Maize is the most widely grown crop in the survey, ahead of bananas, sweet potato and beans. Cassava is also widespread: almost six in ten farming households grow it.</p>
+          <p class="so-what"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg><span>A tool that spots maize and cassava diseases reaches the crops most families already depend on.</span></p>
+        </div>
+        <div class="chapter-viz">
+          <figure class="viz">
+            <figcaption>Share of farming households that grow each crop</figcaption>
+            <ul class="bars" id="chart-crops"></ul>
+          </figure>
+          <figure class="viz">
+            <figcaption>Where maize and cassava are grown, by province</figcaption>
+            <ul class="legend-list" aria-hidden="true"><li style="--c:var(--leaf-600)">Maize</li><li style="--c:var(--cassava)">Cassava</li></ul>
+            <ul class="bars bars--pairs" id="chart-province"></ul>
+            <p class="viz-note" id="province-note"></p>
+          </figure>
+        </div>
+      </div>
+    </section>
+    <section class="chapter reveal" id="pressure" aria-labelledby="pressure-title">
+      <div class="container chapter-grid">
+        <div class="chapter-text">
+          <p class="chapter-label"><span class="chapter-no" aria-hidden="true">2</span>The harvest is under pressure</p>
+          <h2 id="pressure-title">More than half of crop plots had a smaller harvest than the season before.</h2>
+          <p>Farmers compared this season's production with the one before. For maize, cassava and all crops together, "smaller" is more common than "bigger". The survey does not say why, but disease, pests and weather are risks every farmer faces.</p>
+          <p class="so-what"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg><span>Catching a disease early is one of the few things a farmer can still do while the crop is growing.</span></p>
+        </div>
+        <div class="chapter-viz">
+          <figure class="viz">
+            <figcaption>Production compared with the previous season (share of crop plots)</figcaption>
+            <div id="chart-change" class="stacks"></div>
+            <ul class="legend-list" id="legend-change" aria-hidden="true">
+              <li style="--c:#7a1d16">Much smaller</li><li style="--c:#b3382c">Smaller</li><li style="--c:#cfc9b6">No change</li><li style="--c:#2b7d3b">Bigger</li><li style="--c:#17502a">Much bigger</li>
+            </ul>
+          </figure>
+          <div class="big-pair">
+            <p class="big"><strong data-bind="production_change.maize.down" data-fmt="pct"></strong><span>of maize plots: smaller harvest</span></p>
+            <p class="big big--good"><strong data-bind="production_change.maize.up" data-fmt="pct"></strong><span>of maize plots: bigger harvest</span></p>
+          </div>
+        </div>
+      </div>
+    </section>
+    <section class="chapter reveal" id="rain" aria-labelledby="rain-title">
+      <div class="container chapter-grid">
+        <div class="chapter-text">
+          <p class="chapter-label"><span class="chapter-no" aria-hidden="true">3</span>Rain decides</p>
+          <h2 id="rain-title">Almost every plot depends on the rain.</h2>
+          <p>Only a small share of plots is irrigated, and many farmers say there is no water to irrigate with. When the rain is late or heavy there is no backup, so knowing the weather a day ahead helps decide when to plant, weed, spray or harvest.</p>
+          <p class="so-what"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg><span>CropGuard's weather plan turns the next 24 hours into simple advice on irrigating and spraying.</span></p>
+        </div>
+        <div class="chapter-viz">
+          <figure class="viz">
+            <figcaption>100 plots: how they get water</figcaption>
+            <div class="waffle" id="chart-water" role="img"></div>
+            <ul class="legend-list legend-list--stack" id="legend-water"></ul>
+          </figure>
+        </div>
+      </div>
+    </section>
+    <section class="chapter reveal" id="seeds" aria-labelledby="seeds-title">
+      <div class="container chapter-grid">
+        <div class="chapter-text">
+          <p class="chapter-label"><span class="chapter-no" aria-hidden="true">4</span>Seeds</p>
+          <h2 id="seeds-title">Seed quality decides the harvest before the first rain.</h2>
+          <p>Most maize plots now use improved seed. For cassava almost everyone still plants traditional cuttings, and improved varieties are very rare. Cassava is grown from cuttings, so a disease in the planting material is passed on to the next crop.</p>
+          <p class="so-what"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg><span>Healthy planting material and early disease detection protect both this season's harvest and the next one.</span></p>
+        </div>
+        <div class="chapter-viz">
+          <figure class="viz">
+            <figcaption>Type of seed or planting material (share of crop plots)</figcaption>
+            <div id="chart-seeds" class="stacks"></div>
+            <ul class="legend-list" aria-hidden="true"><li style="--c:var(--leaf-600)">Improved</li><li style="--c:#b9b29b">Traditional</li></ul>
+          </figure>
+          <figure class="viz viz--yield">
+            <figcaption>Maize harvest per hectare (middle value)</figcaption>
+            <div class="compare" id="chart-yield"></div>
+            <p class="viz-note">Plots with usable harvest data only. This compares two groups; it does not prove the seed is the cause, because farmers who buy improved seed often use other inputs too.</p>
+          </figure>
+        </div>
+      </div>
+    </section>
+    <section class="chapter reveal" id="advice" aria-labelledby="advice-title">
+      <div class="container chapter-grid">
+        <div class="chapter-text">
+          <p class="chapter-label"><span class="chapter-no" aria-hidden="true">5</span>Advice</p>
+          <h2 id="advice-title">Most farmers get little advice, and almost none by phone.</h2>
+          <p>One in three households received no advisory service at all. Only a small share were trained in pest management or given weather information, and crop insurance is rare.</p>
+          <p class="so-what"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg><span>CropGuard puts a first opinion and weather advice in the farmer's pocket, in Kinyarwanda.</span></p>
+        </div>
+        <div class="chapter-viz">
+          <figure class="viz">
+            <figcaption>Share of farming households</figcaption>
+            <ul class="bars" id="chart-advice"></ul>
+          </figure>
+          <p class="big big--alert"><strong data-bind="advice.via_phone_message_households" data-fmt="int"></strong><span>households received advice by phone message</span></p>
+        </div>
+      </div>
+    </section>
+    <section class="chapter reveal" id="phones" aria-labelledby="phones-title">
+      <div class="container chapter-grid">
+        <div class="chapter-text">
+          <p class="chapter-label"><span class="chapter-no" aria-hidden="true">6</span>Phones</p>
+          <h2 id="phones-title">Phones are everywhere. Smartphones are not, yet.</h2>
+          <p>Most households have someone with a phone, but fewer than half of people own one and only about one in five owners has a smartphone. So CropGuard is built to be light: photos are shrunk before they are sent and pages work on a basic data plan. Extension officers and cooperatives already visit farmers, and they can use CropGuard to help people without a smartphone.</p>
+        </div>
+        <div class="chapter-viz">
+          <figure class="viz">
+            <figcaption>From a household phone to the internet</figcaption>
+            <ul class="bars" id="chart-phones"></ul>
+          </figure>
+          <p class="so-what so-what--warn"><svg class="icon" aria-hidden="true"><use href="#i-info"/></svg><span>This is a real limit: today CropGuard needs a phone with a camera and a web browser.</span></p>
+        </div>
+      </div>
+    </section>
+
+    <section class="chapter chapter--build reveal" id="built" aria-labelledby="built-title">
+      <div class="container">
+        <p class="chapter-label"><span class="chapter-no" aria-hidden="true">7</span>What we built</p>
+        <h2 id="built-title">CropGuard: a first opinion in the field.</h2>
+        <ul class="build-list">
+          <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg></span><div><h3>Maize disease detector <span class="badge badge--ok">Ready</span></h3><p>Photograph a maize leaf and the model frames leaf blight or streak virus.</p></div></li>
+          <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-leaf"/></svg></span><div><h3>Cassava disease detector <span class="badge badge--ok">Ready</span></h3><p>Finds cassava mosaic disease, green mottle and bacterial blight, and recognises a healthy leaf.</p></div></li>
+          <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-cloud"/></svg></span><div><h3>Weather plan <span class="badge badge--ok">Ready</span></h3><p>The next 24 hours for your district, with advice on irrigating and spraying in three languages.</p></div></li>
+          <li><span class="feat-icon"><svg class="icon" aria-hidden="true"><use href="#i-message"/></svg></span><div><h3>Ask the AI <span class="badge badge--ok">Ready</span></h3><p>Questions about growing, seeds, pests and how to get more from your field.</p></div></li>
+        </ul>
+        <h3 class="next-title">Where we want to go next</h3>
+        <ul class="next-list">
+          <li>More crops. After maize and cassava, the survey points to cooking banana, sweet potato and beans, each grown by about six in ten households.</li>
+          <li>Reach farmers without smartphones through extension officers and cooperatives.</li>
+          <li>Test the detectors with farmers in the field, and keep improving them with real photos.</li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="section notes reveal" aria-labelledby="notes-title">
+      <div class="container notes-grid">
+        <h2 id="notes-title">About these numbers</h2>
+        <ul>
+          <li>Source: the AHS2024 agricultural household survey microdata kept in the project's <code>data</code> folder.</li>
+          <li>Figures are counts and shares of the surveyed households and crop plots. They are not weighted to the whole country, so read them as what the survey sample shows.</li>
+          <li>"Smaller" or "bigger" harvest is what farmers reported compared with the previous season. The survey does not record the cause.</li>
+          <li>Harvest per hectare uses plots with a recorded harvest, area and plausible values, and shows the middle value so a few extreme records do not distort it.</li>
+          <li>Phone figures come from household members who were asked about phones; internet use is within the previous three months.</li>
+          <li>To rebuild the numbers: <code>python data/build_story_data.py</code></li>
+        </ul>
+      </div>
+    </section>
+
+    <section class="cta-band on-dark" aria-labelledby="cta-title">
+      <div class="container cta-inner">
+        <h2 id="cta-title">See what CropGuard finds in your own field.</h2>
+        <a class="btn btn--kernel btn--lg" id="cta-band" href="register.html">Create a free account</a>
+      </div>
+    </section>
+  </main>
+  <footer id="site-footer"></footer>
+  <script type="module" src="js/pages/story.js"></script>
+</body>
+</html>

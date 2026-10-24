@@ -1,3 +1,5 @@
+import { t } from "../i18n.js";
+
 // Phones take 8–12 MB photos. Shrinking them first makes uploads far faster on mobile data
 // and the model only looks at a small version anyway.
 const MAX_SIDE = 1600;
@@ -48,7 +50,7 @@ export function drawDetection(canvas, imageUrl, detection) {
         const [x1, y1, x2, y2] = [r.bbox[0] * sx, r.bbox[1] * sy, r.bbox[2] * sx, r.bbox[3] * sy];
         ctx.strokeStyle = "#f0b823";
         ctx.strokeRect(x1, y1, x2 - x1, y2 - y1);
-        const text = `${r.label} ${Math.round(r.confidence * 100)}%`;
+        const text = `${t(r.label)} ${Math.round(r.confidence * 100)}%`;
         const padX = 7 * k, h = 24 * k;
         const w = ctx.measureText(text).width + padX * 2;
         const ty = y1 - h < 0 ? y1 : y1 - h;

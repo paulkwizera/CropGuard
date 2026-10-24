@@ -31,6 +31,7 @@
   <link rel="stylesheet" href="css/layout.css">
   <link rel="stylesheet" href="css/components.css">
   <link rel="stylesheet" href="css/pages.css">
+  <link rel="stylesheet" href="css/story.css">
 </head>
 <body class="app" data-page="advisory">
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -50,8 +51,11 @@
 
       <div id="adv-result" class="stack-lg" hidden>
         <section class="advice-card" aria-labelledby="out-title">
-          <h2 id="out-title">Advice for <span id="out-city"></span></h2>
-          <div class="prose-ai" id="out-advice"></div>
+          <div class="advice-card-head">
+            <h2 id="out-title">Advice for <span id="out-city"></span></h2>
+            <div class="segmented segmented--dark" id="adv-tabs" role="radiogroup" aria-label="Language"></div>
+          </div>
+          <div class="prose-ai" id="out-advice" aria-live="polite"></div>
         </section>
         <dl class="stat-strip" aria-label="Forecast summary">
           <div class="stat"><dt>Rain expected</dt><dd id="out-rain"></dd></div>

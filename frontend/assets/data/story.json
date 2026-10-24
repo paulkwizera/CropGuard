@@ -1,0 +1,240 @@
+{
+  "source": "AHS2024 microdata",
+  "households": 3717,
+  "plot_records": 32616,
+  "crop_records": 74549,
+  "top_crops": [
+    {
+      "crop": "Maize",
+      "households": 3173,
+      "share": 85.4
+    },
+    {
+      "crop": "Cooking banana",
+      "households": 2443,
+      "share": 65.7
+    },
+    {
+      "crop": "Sweet potato",
+      "households": 2395,
+      "share": 64.4
+    },
+    {
+      "crop": "Bush bean",
+      "households": 2321,
+      "share": 62.4
+    },
+    {
+      "crop": "Dessert banana",
+      "households": 2249,
+      "share": 60.5
+    },
+    {
+      "crop": "Climbing bean",
+      "households": 2230,
+      "share": 60.0
+    },
+    {
+      "crop": "Cassava",
+      "households": 2211,
+      "share": 59.5
+    },
+    {
+      "crop": "Banana for beer",
+      "households": 2130,
+      "share": 57.3
+    },
+    {
+      "crop": "Sorghum",
+      "households": 1305,
+      "share": 35.1
+    },
+    {
+      "crop": "Taro",
+      "households": 1138,
+      "share": 30.6
+    }
+  ],
+  "maize": {
+    "households": 3173,
+    "share": 85.4,
+    "records": 9017
+  },
+  "cassava": {
+    "households": 2211,
+    "share": 59.5,
+    "records": 8628
+  },
+  "crop_rank": {
+    "maize": 1,
+    "cassava": 7
+  },
+  "by_province": [
+    {
+      "province": "Kigali",
+      "farming_households": 44,
+      "maize": 90.9,
+      "cassava": 81.8
+    },
+    {
+      "province": "North",
+      "farming_households": 766,
+      "maize": 88.0,
+      "cassava": 37.1
+    },
+    {
+      "province": "South",
+      "farming_households": 1065,
+      "maize": 80.0,
+      "cassava": 74.9
+    },
+    {
+      "province": "East",
+      "farming_households": 1010,
+      "maize": 91.3,
+      "cassava": 53.9
+    },
+    {
+      "province": "West",
+      "farming_households": 832,
+      "maize": 82.3,
+      "cassava": 66.0
+    }
+  ],
+  "seeds": {
+    "all": {
+      "records": 66038,
+      "traditional": 89.9,
+      "improved": 9.9,
+      "both": 0.1
+    },
+    "maize": {
+      "records": 8930,
+      "traditional": 39.9,
+      "improved": 59.5,
+      "both": 0.6
+    },
+    "cassava": {
+      "records": 6163,
+      "traditional": 99.7,
+      "improved": 0.3,
+      "both": 0.0
+    }
+  },
+  "maize_seed_sources": [
+    {
+      "source": "NGOs",
+      "records": 2464,
+      "share": 45.9
+    },
+    {
+      "source": "Agro dealers",
+      "records": 2147,
+      "share": 40.0
+    },
+    {
+      "source": "Market",
+      "records": 432,
+      "share": 8.1
+    },
+    {
+      "source": "Agriculture cooperative",
+      "records": 154,
+      "share": 2.9
+    },
+    {
+      "source": "Recognized seed multipliers",
+      "records": 63,
+      "share": 1.2
+    },
+    {
+      "source": "Government (MINAGRI/RAB/NAEB)",
+      "records": 56,
+      "share": 1.0
+    },
+    {
+      "source": "Other (specify)",
+      "records": 50,
+      "share": 0.9
+    }
+  ],
+  "production_change": {
+    "all": {
+      "records": 56100,
+      "highly_decreased": 12.7,
+      "decreased": 39.9,
+      "no_change": 26.0,
+      "increased": 19.9,
+      "highly_increased": 1.4,
+      "down": 52.6,
+      "up": 21.3
+    },
+    "maize": {
+      "records": 8228,
+      "highly_decreased": 14.5,
+      "decreased": 41.3,
+      "no_change": 12.6,
+      "increased": 28.5,
+      "highly_increased": 3.0,
+      "down": 55.8,
+      "up": 31.5
+    },
+    "cassava": {
+      "records": 3165,
+      "highly_decreased": 10.5,
+      "decreased": 33.1,
+      "no_change": 37.8,
+      "increased": 17.3,
+      "highly_increased": 1.3,
+      "down": 43.6,
+      "up": 18.6
+    }
+  },
+  "maize_yield": {
+    "traditional": {
+      "records": 3406,
+      "median_kg_ha": 1067
+    },
+    "improved": {
+      "records": 5170,
+      "median_kg_ha": 1591
+    }
+  },
+  "water": {
+    "plots": 32616,
+    "irrigated": 5.2,
+    "no_water": 24.1,
+    "cannot_afford": 5.3,
+    "not_needed": 65.4
+  },
+  "inputs": {
+    "plots": 32616,
+    "pesticide": 15.3,
+    "inorganic_fertilizer": 28.9,
+    "organic_fertilizer": 64.3
+  },
+  "advice": {
+    "households": 3724,
+    "any_service": 67.6,
+    "no_service": 32.4,
+    "pest_management": 13.0,
+    "weather_info": 7.5,
+    "via_phone_message": 0.08,
+    "via_phone_message_households": 3,
+    "via_media": 16.0,
+    "crop_insurance": 1.9
+  },
+  "phones": {
+    "households": 3724,
+    "household_has_phone": 82.2,
+    "people_asked": 12305,
+    "people_with_phone": 45.4,
+    "owners_with_smartphone": 21.3,
+    "used_internet": 11.8
+  },
+  "seasons": {
+    "Season B": 15627,
+    "Season A": 15473,
+    "Season C": 1516
+  }
+}

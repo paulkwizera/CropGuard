@@ -12,8 +12,7 @@ Plain HTML, CSS and JavaScript (ES modules). No build step, no npm, no framework
 
 If a page ever shows a yellow "This page did not start" banner, it is this problem (or a missing file).
 
-`js/config.js` starts with `USE_MOCK: true`, so every page works on sample data. Set it to `false` to use the Django API at `API_BASE`.
-Add `?seed=1` to any URL in mock mode (for example `dashboard.html?seed=1`) to preload five sample checks.
+The frontend talks to the real Django backend by default (`API_BASE` in `js/config.js`). To look around with sample data and no backend, add `?mock=1` to any page address (and `?mock=0` to leave demo mode). Add `?seed=1` as well to preload sample checks.
 
 ## Pages
 | File | Who sees it | What it does |
@@ -21,9 +20,11 @@ Add `?seed=1` to any URL in mock mode (for example `dashboard.html?seed=1`) to p
 | `index.html` | everyone | Landing page |
 | `login.html`, `register.html` | signed out | Accounts, inline validation, server errors shown on the right field |
 | `dashboard.html` | signed in | Totals, recent checks, what was found, today's weather, getting-started list |
-| `detect.html` | signed in | Take/choose photo, upload with progress, annotated result, AI treatment advice |
+| `detect.html` | signed in | Choose crop (maize/cassava), take or choose a photo, upload with progress, annotated result (disease or healthy leaf), AI treatment advice |
 | `history.html` | signed in | Saved checks, filter and sort, details dialog, delete with confirmation |
-| `advisory.html` | signed in | 24-hour forecast chart + AI weather advice |
+| `advisory.html` | signed in | 24-hour forecast chart + AI weather advice, with language tabs on the advice |
+| `assistant.html` | signed in | Ask the AI: farming Q&A chat (Gemini) with suggestions and a reply-language switch |
+| `story.html` | everyone | "Our story": the case for CropGuard with charts from the AHS2024 survey (`assets/data/story.json`) |
 | `account.html` | signed in | Edit district, language, email, phone; sign out |
 
 ## Folders
@@ -41,9 +42,10 @@ assets/        fonts (self-hosted), favicon
 - The choice is stored on the device (`cropguard.lang`) and, when signed in, saved to the profile (`preferred_language`). It also sets the language of AI advice.
 - **English text in the HTML and JavaScript is the source.** `js/i18n.js` looks each text up in `js/i18n/rw.js` and `js/i18n/fr.js` and swaps it. Text that JavaScript adds later is translated automatically.
 - Sentences with changing values use `t("Showing {shown} of {total}", { shown, total })` and a matching dictionary key.
+- On the weather page the advice language can also be switched right on the result (tabs above the advice).
 - **Adding or changing text:** write it in English where it is used, then add the same English string as a key to both dictionary files. In development, open the browser console and run `(await import("/js/i18n.js")).missing` to list text that still has no translation.
 - The Kinyarwanda was written as a first draft: **have a native speaker review `js/i18n/rw.js` before launch.**
-- Disease names come from the model, so they stay as the model names them. Add them to the dictionaries once the final class names are known.
+- Disease names come from `ml/labels.json` (English) and are translated by the dictionaries. When a new crop or class is added, add its names to both dictionary files.
 
 ## Pictures
 Original illustrations in `assets/images/` (no stock photos): `step-*.svg` (landing steps), `seedling.svg` (empty states), `field-rows.svg` (sign-in panel and call-to-action band). The landing-page hero is an inline SVG in `index.html`. To use a real photograph instead, put it in `assets/images/` and point the matching `<img>` or CSS `url()` at it.

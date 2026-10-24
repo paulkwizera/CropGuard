@@ -1,0 +1,16 @@
+{
+  "_help": "Maps each model's class code (as stored inside the .pt file) to the name farmers see. A class can also be written as {\"name\": ..., \"healthy\": true} for a 'healthy leaf' class.",
+  "maize": {
+    "MLB": "Maize Leaf Blight",
+    "MSV": "Maize Streak Virus"
+  },
+  "cassava": {
+    "Cassava_Bacterial Blight": "Cassava Bacterial Blight",
+    "Cassava_Green Mottle": "Cassava Green Mottle",
+    "Cassava_Mosaic Disease": "Cassava Mosaic Disease",
+    "Healthy": {
+      "name": "Healthy cassava leaf",
+      "healthy": true
+    }
+  }
+}

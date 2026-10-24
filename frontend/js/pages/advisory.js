@@ -4,7 +4,8 @@ import { mountShell } from "../components/shell.js";
 import { weatherChart } from "../components/chart.js";
 import { clearAll, setBusy, setError, showFormError } from "../components/forms.js";
 import { escapeHtml, renderAdvice } from "../components/format.js";
-import { fillDistricts, getLanguage, mountLanguage } from "../components/lang.js";
+import { fillDistricts, getLanguage, mountLanguage, setLanguage } from "../components/lang.js";
+import { toast } from "../components/toast.js";
 import { getMe } from "../session.js";
 import { adviceLang, t } from "../i18n.js";
 
@@ -17,6 +18,32 @@ async function init() {
   const seg = $("lang-seg");
   mountLanguage(seg, adviceLang(), "language");
   fillDistricts($("districts"));
+
+  // Language tabs on the advice itself: switch Kinyarwanda / English / Français without filling the form again.
+  const tabs = $("adv-tabs");
+  const cache = new Map();   // "city|language" -> advice text
+  let current = { city: "", language: adviceLang() };
+  mountLanguage(tabs, current.language, "adv_lang");
+  tabs.addEventListener("change", async (e) => {
+    const language = e.target.value;
+    setLanguage(seg, language); // keep the form in step
+    const key = `${current.city}|${language}`;
+    if (cache.has(key)) { current.language = language; $("out-advice").innerHTML = renderAdvice(cache.get(key)); return; }
+    $("out-advice").setAttribute("aria-busy", "true");
+    $("out-advice").innerHTML = `<div class="skeleton" style="height:1rem;width:90%;margin-bottom:.6rem"></div><div class="skeleton" style="height:1rem;width:75%;margin-bottom:.6rem"></div><div class="skeleton" style="height:1rem;width:60%"></div>`;
+    try {
+      const data = await api.advisory(current.city, language);
+      cache.set(key, data.advisory);
+      current.language = language;
+      $("out-advice").innerHTML = renderAdvice(data.advisory);
+    } catch (err) {
+      toast(err.message, "error");
+      setLanguage(tabs, current.language); setLanguage(seg, current.language);
+      $("out-advice").innerHTML = renderAdvice(cache.get(`${current.city}|${current.language}`) || "");
+    } finally {
+      $("out-advice").removeAttribute("aria-busy");
+    }
+  });
 
   try {
     const me = await getMe();
@@ -45,6 +72,9 @@ async function init() {
 
   function render(data) {
     const r = data.weather.readings;
+    current = { city: data.city, language: data.language };
+    cache.clear(); cache.set(`${data.city}|${data.language}`, data.advisory);
+    setLanguage(tabs, data.language);
     $("out-city").textContent = data.city;
     $("out-advice").innerHTML = renderAdvice(data.advisory);
     $("out-rain").textContent = `${data.weather.total_rain_mm} mm`;
