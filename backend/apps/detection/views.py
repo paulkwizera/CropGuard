@@ -1,6 +1,7 @@
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 
 from apps.advisory.services import advisor
 from apps.core.exceptions import ServiceUnavailable
@@ -33,6 +34,15 @@ class DetectionViewSet(
 
     serializer_class = DetectionSerializer
     lookup_value_regex = "[0-9a-f]{24}"  # MongoDB ObjectId
+
+    # Only the expensive actions are limited (a photo check runs the model, advice calls Gemini);
+    # listing, viewing and deleting checks are not.
+    throttle_classes = [ScopedRateThrottle]
+    THROTTLE_SCOPES = {"create": "upload", "advice": "ai"}
+
+    def get_throttles(self):
+        self.throttle_scope = self.THROTTLE_SCOPES.get(self.action)  # None = no limit for this action
+        return super().get_throttles()
 
     def get_queryset(self):
         return Detection.objects.filter(user=self.request.user)
