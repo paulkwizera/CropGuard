@@ -1,3 +1,4 @@
+
 name: Backend CI
 
 on:
@@ -10,25 +11,37 @@ on:
 jobs:
   test:
     runs-on: ubuntu-latest
+
     services:
       mongo:
         image: mongo:7
         ports: ["27017:27017"]
+
     env:
       MONGODB_URI: mongodb://localhost:27017
       DJANGO_DEBUG: "True"
+
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
           cache: pip
           cache-dependency-path: backend/requirements.txt
-      # torch/ultralytics are huge; tests mock the model, so CI skips them.
+
+      # Ultralytics is excluded because CI tests mock the model.
+      # Keep google-genai installed for the assistant tests.
       - name: Install dependencies
         run: |
-          grep -v -E "ultralytics|google-genai" backend/requirements.txt > /tmp/ci-requirements.txt
-          pip install -r /tmp/ci-requirements.txt
+          grep -v -E "^[[:space:]]*ultralytics([<=>~!].*)?$" backend/requirements.txt > /tmp/ci-requirements.txt
+          python -m pip install -r /tmp/ci-requirements.txt
+
+      - name: Verify Google Gen AI installation
+        run: |
+          python -m pip show google-genai
+          python -c "from google.genai import types; print('Google Gen AI import successful')"
+
       - name: Checks, migrations, tests
         working-directory: backend
         run: |
