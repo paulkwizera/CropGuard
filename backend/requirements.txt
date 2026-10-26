@@ -10,5 +10,5 @@ requests>=2.32
 gunicorn>=22.0
 
 # --- AI
-ultralytics>=8.3        # YOLOv8 (pulls in torch + opencv)
+ultralytics>=8.4.184    # YOLOv8 (pulls in torch + opencv); cassava.pt was trained with 8.4.184
 google-genai>=1.0       # Gemini advisor

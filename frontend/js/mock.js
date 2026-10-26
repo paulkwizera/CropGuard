@@ -31,7 +31,8 @@ if (SEEDED) {
   });
 }
 
-function fakeResult(imageUrl, w, h, crop = "maize") {
+function fakeResult(imageUrl, w, h, crop = "auto") {
+  if (crop === "auto") crop = Math.random() < 0.5 ? "maize" : "cassava"; // the real server works it out from the photo
   const pool = LABELS[crop] || LABELS.maize;
   const [code, label, healthy] = pool[Math.floor(Math.random() * pool.length)];
   const confidence = +(0.8 + Math.random() * 0.19).toFixed(2);
@@ -59,7 +60,7 @@ export const mock = {
   async updateMe(data) { await wait(400); me = { ...me, ...data }; return me; },
 
   async crops() { await wait(150); return [{ id: "maize", name: "Maize", available: true }, { id: "cassava", name: "Cassava", available: true }]; },
-  async createDetection(file, onProgress, crop = "maize") {
+  async createDetection(file, onProgress, crop = "auto") {
     for (const p of [0.2, 0.5, 0.8, 1]) { await wait(180); onProgress?.(p); }
     await wait(900);
     const url = URL.createObjectURL(file);

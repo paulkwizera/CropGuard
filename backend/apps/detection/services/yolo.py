@@ -29,8 +29,13 @@ def get_model(crop: str):
     return _load_model(str(crops.model_path(crop)))
 
 
-def predict(image_path, crop: str = "maize", conf: float | None = None) -> dict:
-    """Run detection on one image file.
+# In auto mode every detector is run at this low floor so their confidences can be compared;
+# only the winning crop's detections that also pass YOLO_CONF are reported.
+AUTO_FLOOR = 0.10
+
+
+def predict(image_path, crop: str, conf: float | None = None) -> dict:
+    """Run one crop's detector on one image file. (To let CropGuard pick the crop, use predict_auto.)
 
     Returns {"width", "height", "results": [{"code", "label", "healthy", "confidence", "bbox"}...]}
     sorted by confidence (highest first). `results` is empty when nothing passes the threshold.
@@ -53,3 +58,26 @@ def predict(image_path, crop: str = "maize", conf: float | None = None) -> dict:
         })
     found.sort(key=lambda item: item["confidence"], reverse=True)
     return {"width": int(width), "height": int(height), "results": found}
+
+
+def predict_auto(image_path, conf: float | None = None) -> dict:
+    """Work out which crop the photo shows, then report that crop's findings.
+
+    A detector only knows its own crop's classes, so shown a leaf from another crop it still has to answer
+    with one of them (a cassava leaf comes out as "Maize Streak Virus"). So every available detector looks at
+    the photo and we trust the one that is most sure of what it sees.
+
+    Returns the same shape as predict() plus "crop" (the winner) and "scores" (each crop's top confidence).
+    """
+    threshold = conf if conf is not None else settings.YOLO_CONF
+    available = [c for c in crops.crop_ids() if crops.is_available(c)]
+    if not available:
+        raise ServiceUnavailable("No crop detector is available yet.")
+    outcomes = {c: predict(image_path, c, conf=min(AUTO_FLOOR, threshold)) for c in available}
+    scores = {c: (o["results"][0]["confidence"] if o["results"] else 0.0) for c, o in outcomes.items()}
+    best = max(available, key=lambda c: scores[c])
+    chosen = dict(outcomes[best])
+    chosen["results"] = [r for r in chosen["results"] if r["confidence"] >= threshold]
+    chosen["crop"] = best
+    chosen["scores"] = scores
+    return chosen

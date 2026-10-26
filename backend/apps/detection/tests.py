@@ -24,6 +24,14 @@ FAKE_OUTCOME = {
 }
 
 
+CASSAVA_OUTCOME = {
+    "crop": "cassava",
+    "width": 64,
+    "height": 64,
+    "results": [{"code": "Cassava_Mosaic Disease", "label": "Cassava Mosaic Disease", "healthy": False, "confidence": 0.88, "bbox": [0, 0, 64, 64]}],
+}
+
+
 class DetectionApiTests(APITestCase):
     def setUp(self):
         self.user = User.objects.create_user("farmer", password="Str0ng-pass!")
@@ -33,8 +41,9 @@ class DetectionApiTests(APITestCase):
         self.client.force_authenticate(None)
         self.assertEqual(self.client.get("/api/detections/").status_code, 401)
 
-    @patch("apps.detection.views.yolo.predict", return_value=FAKE_OUTCOME)
+    @patch("apps.detection.views.yolo.predict_auto", return_value={**FAKE_OUTCOME, "crop": "maize"})
     def test_upload_and_list(self, _predict):
+        # No crop sent -> "auto": the server works the crop out from the photo.
         r = self.client.post("/api/detections/", {"image": fake_image()}, format="multipart")
         self.assertEqual(r.status_code, 201, r.content)
         self.assertEqual(r.data["top_label"], "Maize Leaf Blight")
@@ -43,6 +52,26 @@ class DetectionApiTests(APITestCase):
 
         r = self.client.get("/api/detections/")
         self.assertEqual(r.data["count"], 1)
+
+    @patch("apps.detection.views.yolo.predict_auto", return_value=CASSAVA_OUTCOME)
+    def test_auto_saves_the_crop_the_photo_turned_out_to_be(self, _predict):
+        r = self.client.post("/api/detections/", {"image": fake_image(), "crop": "auto"}, format="multipart")
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(r.data["crop"], "cassava")
+        self.assertEqual(r.data["top_label"], "Cassava Mosaic Disease")
+
+    @patch("apps.detection.views.yolo.predict_auto")
+    @patch("apps.detection.views.yolo.predict", return_value=CASSAVA_OUTCOME)
+    def test_a_chosen_crop_is_respected_and_skips_auto(self, predict, predict_auto):
+        r = self.client.post("/api/detections/", {"image": fake_image(), "crop": "cassava"}, format="multipart")
+        self.assertEqual(r.status_code, 201, r.content)
+        self.assertEqual(r.data["crop"], "cassava")
+        self.assertEqual(predict.call_args.args[1], "cassava")
+        predict_auto.assert_not_called()
+
+    def test_unknown_crop_is_rejected(self):
+        r = self.client.post("/api/detections/", {"image": fake_image(), "crop": "banana"}, format="multipart")
+        self.assertEqual(r.status_code, 400)
 
 
 class CropRegistryTests(SimpleTestCase):
@@ -100,3 +129,66 @@ class SummarizeTests(SimpleTestCase):
 
         self.assertEqual(summarize([{"label": "Healthy cassava leaf", "healthy": True, "confidence": 0.8}])[0], "healthy")
         self.assertEqual(summarize([]), ("none", None))
+
+
+def _found(code, label, confidence, healthy=False):
+    return {"code": code, "label": label, "healthy": healthy, "confidence": confidence, "bbox": [0, 0, 10, 10]}
+
+
+class AutoCropTests(SimpleTestCase):
+    """predict_auto asks every available model and trusts the one that is most sure."""
+
+    def run_auto(self, per_crop, conf=0.5, available=("maize", "cassava")):
+        from .services import yolo
+
+        def fake_predict(path, crop, conf=None):
+            found = [r for r in per_crop.get(crop, []) if r["confidence"] >= (conf or 0)]
+            return {"width": 100, "height": 80, "results": sorted(found, key=lambda r: -r["confidence"])}
+
+        with patch.object(yolo, "predict", side_effect=fake_predict), \
+                patch.object(crops, "is_available", side_effect=lambda c: c in available), \
+                override_settings(YOLO_CONF=conf):
+            return yolo.predict_auto("leaf.jpg")
+
+    def test_a_cassava_leaf_is_not_read_as_maize(self):
+        # The maize model has to answer with one of its two diseases, but only weakly; cassava is sure.
+        out = self.run_auto({
+            "maize": [_found("MSV", "Maize Streak Virus", 0.31)],
+            "cassava": [_found("Cassava_Mosaic Disease", "Cassava Mosaic Disease", 0.93)],
+        })
+        self.assertEqual(out["crop"], "cassava")
+        self.assertEqual(out["results"][0]["label"], "Cassava Mosaic Disease")
+
+    def test_a_maize_leaf_is_not_read_as_cassava(self):
+        out = self.run_auto({
+            "maize": [_found("MLB", "Maize Leaf Blight", 0.95)],
+            "cassava": [_found("Healthy", "Healthy cassava leaf", 0.40, healthy=True)],
+        })
+        self.assertEqual(out["crop"], "maize")
+        self.assertEqual([r["label"] for r in out["results"]], ["Maize Leaf Blight"])
+
+    def test_only_the_winning_crops_detections_above_the_threshold_are_reported(self):
+        out = self.run_auto({
+            "maize": [_found("MLB", "Maize Leaf Blight", 0.9), _found("MSV", "Maize Streak Virus", 0.2)],
+            "cassava": [_found("Healthy", "Healthy cassava leaf", 0.3, healthy=True)],
+        })
+        self.assertEqual([r["label"] for r in out["results"]], ["Maize Leaf Blight"])
+        self.assertEqual(out["scores"], {"maize": 0.9, "cassava": 0.3})
+
+    def test_nothing_confident_gives_no_results_but_still_names_the_likelier_crop(self):
+        out = self.run_auto({
+            "maize": [_found("MSV", "Maize Streak Virus", 0.12)],
+            "cassava": [_found("Cassava_Green Mottle", "Cassava Green Mottle", 0.25)],
+        })
+        self.assertEqual(out["crop"], "cassava")
+        self.assertEqual(out["results"], [])
+
+    def test_with_one_model_available_only_that_one_runs(self):
+        out = self.run_auto({"maize": [_found("MLB", "Maize Leaf Blight", 0.8)]}, available=("maize",))
+        self.assertEqual((out["crop"], list(out["scores"])), ("maize", ["maize"]))
+
+    def test_no_models_at_all_is_a_clear_error(self):
+        from apps.core.exceptions import ServiceUnavailable
+
+        with self.assertRaises(ServiceUnavailable):
+            self.run_auto({}, available=())

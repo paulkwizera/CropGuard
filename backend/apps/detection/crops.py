@@ -13,8 +13,16 @@ from pathlib import Path
 from django.conf import settings
 
 
+AUTO = "auto"  # not a real crop: "work out from the photo which crop it is" (the default)
+
+
 def crop_ids() -> list[str]:
     return list(settings.CROP_MODELS)
+
+
+def choices() -> list[str]:
+    """Every value a client may send as `crop`."""
+    return [AUTO, *crop_ids()]
 
 
 def model_path(crop: str) -> Path:

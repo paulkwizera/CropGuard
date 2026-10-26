@@ -21,18 +21,29 @@ function init() {
   let preview = null;   // object URL for the preview
   let current = null;   // detection returned by the API
   let adviceText = "";
-  let crop = "maize";   // which detector to use
+  let crop = "auto";    // which detector to use: "auto" (the server tells maize from cassava) or a crop id
+  let requested = crop; // what was asked for on the last check (so the result can say "recognised as ...")
 
   $("advice-lang").innerHTML = LANGUAGES.map((l) => `<option value="${l.code}">${l.label}</option>`).join("");
   $("advice-lang").value = adviceLang();
 
-  // ---- which crop? (cassava stays "coming soon" until its model file exists on the server)
-  const FALLBACK_CROPS = [{ id: "maize", name: "Maize", available: true }];
+  // ---- which crop? Each detector only knows its own crop, so a leaf sent to the wrong one still gets
+  // an (wrong) answer. "Auto-detect" is therefore the default whenever two or more detectors are ready:
+  // the server asks all of them and trusts the one that is most sure. A crop whose model file is missing
+  // on the server stays "coming soon".
+  const AUTO = { id: "auto", name: "Auto-detect", available: true };
+  // If the crop list cannot be loaded, still offer every crop (the server explains if one is not ready).
+  const FALLBACK_CROPS = [{ id: "maize", name: "Maize", available: true }, { id: "cassava", name: "Cassava", available: true }];
+  const syncCropHint = () => { $("crop-auto-hint").hidden = crop !== "auto"; };
   api.crops().catch(() => FALLBACK_CROPS).then((list) => {
-    $("crop-seg").innerHTML = list.map((c) => `<label><input type="radio" name="crop" value="${c.id}" ${c.available ? "" : "disabled"} ${c.id === crop ? "checked" : ""}><span>${escapeHtml(c.name)}${c.available ? "" : ` <em class="soon">Coming soon</em>`}</span></label>`).join("");
+    const ready = list.filter((c) => c.available);
+    crop = ready.length > 1 ? "auto" : (ready[0]?.id ?? "maize");
+    const options = ready.length > 1 ? [AUTO, ...list] : list;
+    $("crop-seg").innerHTML = options.map((c) => `<label><input type="radio" name="crop" value="${c.id}" ${c.available ? "" : "disabled"} ${c.id === crop ? "checked" : ""}><span>${escapeHtml(c.name)}${c.available ? "" : ` <em class="soon">Coming soon</em>`}</span></label>`).join("");
     $("crop-note").hidden = list.every((c) => c.available);
+    syncCropHint();
   });
-  $("crop-seg").addEventListener("change", (e) => { crop = e.target.value; });
+  $("crop-seg").addEventListener("change", (e) => { crop = e.target.value; syncCropHint(); });
 
   function show(stage, step = "photo") {
     stages.forEach((s) => ($(`stage-${s}`).hidden = s !== stage));
@@ -81,6 +92,7 @@ function init() {
     bar.firstElementChild.style.width = "0%";
     $("busy-title").textContent = "Uploading photo…";
     show("busy");
+    requested = crop;
     try {
       current = await api.createDetection(file, (p) => {
         bar.firstElementChild.style.width = `${Math.round(p * 100)}%`;
@@ -109,14 +121,16 @@ function init() {
         <h2 class="result-title">${escapeHtml(d.top_label)}</h2>
         <p class="conf-line"><strong>${percent(d.top_confidence)}</strong> <span class="muted">confidence</span></p>
         <div class="meter" role="img" aria-label="${escapeHtml(t("Confidence {pct}", { pct: percent(d.top_confidence) }))}"><span style="width:${percent(d.top_confidence)}"></span></div>
-        <p class="muted" style="margin-top:1rem">No disease was detected on this leaf. Check a few more leaves from different parts of the field to be sure.</p>`;
+        <p class="muted" style="margin-top:1rem">No disease was detected on this leaf. Check a few more leaves from different parts of the field to be sure.</p>${recognisedLine(d)}`;
       $("advice-section").hidden = true;
       return;
     }
     if (!d.top_label) {
       summary.innerHTML = `<span class="badge badge--warn">${icon("info", "icon--sm")}Nothing detected</span>
         <h2 class="result-title">No disease found</h2>
-        <p class="muted">The model did not find a problem it was confident about. That does not guarantee the plant is healthy. Try a closer, sharper photo of one leaf in daylight, or check a different leaf.</p>`;
+        <p class="muted">${requested === "auto"
+          ? "CropGuard could not recognise a maize or cassava leaf with confidence in this photo. Try a closer, sharper photo of one leaf in daylight, or choose the crop yourself and check again."
+          : "The model did not find a problem it was confident about. That does not guarantee the plant is healthy. Try a closer, sharper photo of one leaf in daylight, or check a different leaf."}</p>`;
       $("advice-section").hidden = true;
       return;
     }
@@ -126,9 +140,19 @@ function init() {
       <p class="conf-line"><strong>${percent(d.top_confidence)}</strong> <span class="muted">confidence</span></p>
       <div class="meter" role="img" aria-label="${escapeHtml(t("Confidence {pct}", { pct: percent(d.top_confidence) }))}"><span style="width:${percent(d.top_confidence)}"></span></div>
       ${others.length ? `<p class="muted" style="margin:1rem 0 .25rem;font-size:var(--fs-sm)">Also considered</p><ul class="also">${others.map((r) => `<li><span>${escapeHtml(r.label)}</span><span class="faint">${percent(r.confidence)}</span></li>`).join("")}</ul>` : ""}
+      ${recognisedLine(d)}
       <p class="disclaimer">${icon("info", "icon--sm")}<span>This is a computer estimate from one photo. For a severe outbreak, confirm with your local agronomist.</span></p>`;
     $("advice-section").hidden = false;
     if (d.advice) showAdvice(d.advice);
+  }
+
+  // After an Auto-detect check, say which crop was recognised and how to correct it if that is wrong.
+  function recognisedLine(d) {
+    if (requested !== "auto") return "";
+    const text = d.crop === "cassava"
+      ? "CropGuard recognised this as a cassava leaf. Not right? Choose the crop yourself and check again."
+      : "CropGuard recognised this as a maize leaf. Not right? Choose the crop yourself and check again.";
+    return `<p class="muted" style="margin-top:1rem;font-size:var(--fs-sm)">${text}</p>`;
   }
 
   function showAdvice(text) {

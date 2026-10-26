@@ -17,6 +17,19 @@ python manage.py try_detector ../ml/training_samples/some_leaf.jpg
 It prints what the model finds at several confidence thresholds. If it finds the disease at 0.25 but not at 0.5,
 lower `YOLO_CONF` in `.env`.
 
+## How the website picks the model
+Each detector only knows its own crop, so it cannot say "this is not my crop": shown a cassava leaf, the maize model
+still answers *Maize Leaf Blight* or *Maize Streak Virus*. The Check-a-plant page therefore defaults to **Auto-detect**:
+the server runs every available model on the photo and trusts the one that is most sure (`predict_auto` in
+`backend/apps/detection/services/yolo.py`). A farmer can still choose Maize or Cassava by hand.
+A new crop you add below is included in Auto-detect automatically.
+
+To see why a photo was read the way it was:
+```bash
+cd backend
+python manage.py try_detector path/to/leaf.jpg        # shows each crop's model and which one wins
+```
+
 ## Adding or replacing a detector
 (Cassava is already in. Use the same steps when you retrain it, or for the next crop.)
 1. Train it (ideally 640 px) and copy the best weights to `ml/weights/<crop>.pt`.

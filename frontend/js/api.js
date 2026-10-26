@@ -99,7 +99,7 @@ const real = {
   updateMe: (data) => request("/auth/me/", { method: "PATCH", json: data }),
 
   crops: () => request("/detections/crops/"),
-  createDetection: (file, onProgress, crop = "maize") => { const f = new FormData(); f.append("image", file); f.append("crop", crop); return upload("/detections/", f, onProgress); },
+  createDetection: (file, onProgress, crop = "auto") => { const f = new FormData(); f.append("image", file); f.append("crop", crop); return upload("/detections/", f, onProgress); },
   listDetections: (page = 1) => request(`/detections/?page=${page}`),
   getDetection: (id) => request(`/detections/${id}/`),
   deleteDetection: (id) => request(`/detections/${id}/`, { method: "DELETE" }),

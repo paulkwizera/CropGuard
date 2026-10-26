@@ -48,12 +48,18 @@ class DetectionViewSet(
         return Detection.objects.filter(user=self.request.user)
 
     def perform_create(self, serializer):
-        crop = serializer.validated_data.get("crop", "maize")
-        if not crops.is_available(crop):  # e.g. cassava while its model is still being trained
+        crop = serializer.validated_data.get("crop", crops.AUTO)
+        auto = crop == crops.AUTO
+        if not auto and not crops.is_available(crop):  # e.g. a crop whose model file is missing
             raise ServiceUnavailable(f"The {crop} detector is not available yet.")
-        detection = serializer.save(user=self.request.user, crop=crop)
+        # In auto mode the real crop is only known after the photo has been analysed.
+        detection = serializer.save(user=self.request.user, crop="maize" if auto else crop)
         try:
-            outcome = yolo.predict(detection.image.path, crop)
+            if auto:
+                outcome = yolo.predict_auto(detection.image.path)
+                detection.crop = outcome["crop"]
+            else:
+                outcome = yolo.predict(detection.image.path, crop)
         except Exception:
             detection.delete()  # don't keep an upload we could not analyse
             raise
@@ -68,7 +74,7 @@ class DetectionViewSet(
 
     @action(detail=False, methods=["get"])
     def crops(self, request):
-        """Which crops can be checked right now (the cassava model is still being trained)."""
+        """Which crops can be checked right now (a crop is available once its model file exists)."""
         return Response(crops.list_crops())
 
     @action(detail=True, methods=["post"])

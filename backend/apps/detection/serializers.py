@@ -1,12 +1,14 @@
 from django.conf import settings
 from rest_framework import serializers
 
+from . import crops
 from .models import Detection
 
 
 class DetectionSerializer(serializers.ModelSerializer):
     id = serializers.CharField(read_only=True)
-    crop = serializers.CharField(required=False, default="maize")
+    # "auto" (the default) lets the server work out the crop from the photo; the saved record holds the real crop.
+    crop = serializers.CharField(required=False, default=crops.AUTO)
 
     class Meta:
         model = Detection
@@ -17,8 +19,8 @@ class DetectionSerializer(serializers.ModelSerializer):
         read_only_fields = [f for f in fields if f not in ("image", "crop")]
 
     def validate_crop(self, value):
-        if value not in settings.CROP_MODELS:
-            raise serializers.ValidationError(f"Unknown crop. Choose one of: {', '.join(settings.CROP_MODELS)}.")
+        if value != crops.AUTO and value not in settings.CROP_MODELS:
+            raise serializers.ValidationError(f"Unknown crop. Choose one of: {', '.join(crops.choices())}.")
         return value
 
     def validate_image(self, image):
