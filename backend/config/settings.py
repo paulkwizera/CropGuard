@@ -105,7 +105,16 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 20,
-    "DEFAULT_THROTTLE_RATES": {"assistant": os.getenv("ASSISTANT_RATE", "30/min")},
+    # Rate limits ("N/min" or "N/hour"). Views opt in with throttle_scope; each farmer (or, when
+    # signed out, each IP address) gets their own counter. Override any of them in .env.
+    "DEFAULT_THROTTLE_RATES": {
+        "assistant": os.getenv("ASSISTANT_RATE", "30/min"),   # AI chat questions
+        "login": os.getenv("LOGIN_RATE", "20/min"),           # sign-in attempts (slows password guessing)
+        "register": os.getenv("REGISTER_RATE", "20/hour"),    # new accounts (generous: shared phone networks)
+        "upload": os.getenv("UPLOAD_RATE", "60/hour"),        # photo checks (each one runs the model)
+        "ai": os.getenv("AI_RATE", "30/hour"),                # treatment advice + weather advice (Gemini)
+        "weather": os.getenv("WEATHER_RATE", "120/hour"),     # forecast lookups (OpenWeather)
+    },
 }
 
 SIMPLE_JWT = {

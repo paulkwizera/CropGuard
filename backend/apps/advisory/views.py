@@ -1,4 +1,5 @@
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from .serializers import AdvisoryRequestSerializer, WeatherQuerySerializer
@@ -7,6 +8,9 @@ from .services import advisor, weather
 
 class WeatherView(APIView):
     """GET /api/advisory/weather/?city=Musanze -> next-24h forecast summary."""
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "weather"
 
     def get(self, request):
         query = WeatherQuerySerializer(data=request.query_params)
@@ -18,6 +22,9 @@ class WeatherView(APIView):
 
 class AdvisoryView(APIView):
     """POST /api/advisory/ {city, language} -> forecast + AI farming advice."""
+
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "ai"
 
     def post(self, request):
         body = AdvisoryRequestSerializer(data=request.data)

@@ -70,7 +70,7 @@ def chat(messages: list[dict], language: str = "rw", context: dict | None = None
             model=settings.GEMINI_MODEL,
             contents=build_contents(messages),
             config=types.GenerateContentConfig(
-                system_instruction=system_prompt(language, context), temperature=0.5, max_output_tokens=1024,
+                system_instruction=system_prompt(language, context), temperature=0.5, max_output_tokens=4096,
             ),
         )
         text = (response.text or "").strip()
