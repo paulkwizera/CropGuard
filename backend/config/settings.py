@@ -112,6 +112,7 @@ REST_FRAMEWORK = {
         "login": os.getenv("LOGIN_RATE", "20/min"),           # sign-in attempts (slows password guessing)
         "register": os.getenv("REGISTER_RATE", "20/hour"),    # new accounts (generous: shared phone networks)
         "upload": os.getenv("UPLOAD_RATE", "60/hour"),        # photo checks (each one runs the model)
+        "verify": os.getenv("AI_VERIFY_RATE", "60/hour"),      # Gemini second opinion on a photo (one per check)
         "ai": os.getenv("AI_RATE", "30/hour"),                # treatment advice + weather advice (Gemini)
         "weather": os.getenv("WEATHER_RATE", "120/hour"),     # forecast lookups (OpenWeather)
     },
@@ -163,4 +164,7 @@ MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "8"))
 
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+# When Gemini disagrees about WHICH DISEASE (same crop), the detector keeps its answer if it is at least this sure.
+# Below it, Gemini wins only if it is itself highly certain. (Crop identity is always Gemini's call.)
+VERIFY_DETECTOR_TRUST = float(os.getenv("VERIFY_DETECTOR_TRUST", "0.80"))
 OPENWEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "")

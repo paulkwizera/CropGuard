@@ -30,6 +30,25 @@ cd backend
 python manage.py try_detector path/to/leaf.jpg        # shows each crop's model and which one wins
 ```
 
+## Gemini double-check (one final answer)
+After the detector answers, the page asks Gemini (`POST /api/detections/<id>/verify/`) to look at the same photo, then the
+server picks **one** final answer (`backend/apps/detection/services/decision.py`) and stores it as the result. Gemini is
+told what the detector said but warned not to trust it, and may only answer from fixed options (crop, condition, certainty).
+
+Who wins:
+| Situation | Final answer |
+|---|---|
+| They agree | the detector's answer, "confirmed" |
+| Gemini sees a **different crop** | the photo is re-checked with that crop's detector, which names the disease |
+| Same crop, **different disease** | the detector, unless it is under `VERIFY_DETECTOR_TRUST` (default 0.80) or found nothing **and** Gemini is *highly* certain: then Gemini |
+| **Not a maize or cassava leaf** (another plant, or no leaf at all) | Gemini **always** intervenes once it is at least moderately sure, even if the detector was 97% sure: the result becomes "Not a maize or cassava leaf" (status `other`) with no disease verdict, and Gemini names the plant if it can |
+| Gemini unsure (low certainty), or only moderately sure about a *disease* | the detector, "not confirmed" |
+
+The detector's original answer is always kept in `verification.resolution.detector`. A Gemini-decided answer has no
+percentage and no box (Gemini gives neither); the page shows "Gemini is highly certain" instead. If Gemini is slow or
+unavailable the detector's own answer is shown. Needs `GOOGLE_API_KEY` in `.env`; limit with `AI_VERIFY_RATE`
+(default 60/hour). The decision is made once per check, so asking again returns the same answer.
+
 ## Adding or replacing a detector
 (Cassava is already in. Use the same steps when you retrain it, or for the next crop.)
 1. Train it (ideally 640 px) and copy the best weights to `ml/weights/<crop>.pt`.

@@ -10,13 +10,16 @@ class Detection(models.Model):
     image = models.ImageField(upload_to="detections/%Y/%m/")
     image_width = models.PositiveIntegerField(null=True, blank=True)
     image_height = models.PositiveIntegerField(null=True, blank=True)
-    # "disease" (a disease was found), "healthy" (the model recognised a healthy leaf) or "none" (nothing detected)
+    # "disease" (a disease was found), "healthy" (the model recognised a healthy leaf), "none" (nothing detected)
+    # or "other" (Gemini says it is not a maize/cassava leaf, so the app gives no verdict; crop is then "other")
     status = models.CharField(max_length=10, default="none")
     top_label = models.CharField(max_length=100, blank=True)
     top_confidence = models.FloatField(null=True, blank=True)
     # list of {"label": str, "confidence": float, "bbox": [x1, y1, x2, y2]}
     results = models.JSONField(default=list, blank=True)
     advice = models.TextField(blank=True)
+    # Gemini's second opinion on this photo (see advisor.verify_detection); {} until it has been asked.
+    verification = models.JSONField(default=dict, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

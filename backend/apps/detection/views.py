@@ -9,18 +9,8 @@ from apps.core.exceptions import ServiceUnavailable
 from . import crops
 from .models import Detection
 from .serializers import AdviceRequestSerializer, DetectionSerializer
-from .services import yolo
-
-
-def summarize(results: list[dict]) -> tuple[str, dict | None]:
-    """Pick the headline of a check. A disease always wins over a 'healthy' region of the same photo."""
-    diseases = [r for r in results if not r.get("healthy")]
-    healthy = [r for r in results if r.get("healthy")]
-    if diseases:
-        return "disease", diseases[0]
-    if healthy:
-        return "healthy", healthy[0]
-    return "none", None
+from .services import decision, yolo
+from .services.decision import summarize  # noqa: F401  (kept importable from here)
 
 
 class DetectionViewSet(
@@ -38,7 +28,7 @@ class DetectionViewSet(
     # Only the expensive actions are limited (a photo check runs the model, advice calls Gemini);
     # listing, viewing and deleting checks are not.
     throttle_classes = [ScopedRateThrottle]
-    THROTTLE_SCOPES = {"create": "upload", "advice": "ai"}
+    THROTTLE_SCOPES = {"create": "upload", "advice": "ai", "verify": "verify"}
 
     def get_throttles(self):
         self.throttle_scope = self.THROTTLE_SCOPES.get(self.action)  # None = no limit for this action
@@ -76,6 +66,45 @@ class DetectionViewSet(
     def crops(self, request):
         """Which crops can be checked right now (a crop is available once its model file exists)."""
         return Response(crops.list_crops())
+
+    @action(detail=True, methods=["post"])
+    def verify(self, request, pk=None):
+        """Ask Gemini to look at the photo itself and say whether it agrees with the detector."""
+        detection = self.get_object()
+        body = AdviceRequestSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+        language = body.validated_data["language"]
+        if not detection.verification:  # decided once per check: asking again returns the same final answer
+            self.second_opinion(detection, language)
+        return Response(self.get_serializer(detection).data)
+
+    @staticmethod
+    def second_opinion(detection, language):
+        """Ask Gemini, then pick ONE final answer (see services/decision.py) and store it on the check."""
+        detector = {
+            "crop": detection.crop,
+            "status": detection.status,
+            "top_label": detection.top_label,
+            "top_confidence": detection.top_confidence,
+            "results": detection.results,
+        }
+        gemini = advisor.verify_detection(detection.image.path, detector, language)
+
+        def rerun(crop):  # the right crop's detector, when Gemini says the photo shows another crop
+            if not crops.is_available(crop):
+                return None
+            try:
+                return yolo.predict(detection.image.path, crop)["results"]
+            except Exception:
+                return None
+
+        outcome = decision.decide(detector, gemini, rerun)
+        final = outcome["final"]
+        detection.crop, detection.status = final["crop"], final["status"]
+        detection.top_label, detection.top_confidence = final["top_label"], final["top_confidence"]
+        detection.results = final["results"]
+        detection.verification = {**gemini, "resolution": outcome["resolution"]}
+        detection.save()
 
     @action(detail=True, methods=["post"])
     def advice(self, request, pk=None):

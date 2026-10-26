@@ -14,7 +14,7 @@ class DetectionSerializer(serializers.ModelSerializer):
         model = Detection
         fields = [
             "id", "crop", "image", "image_width", "image_height",
-            "status", "top_label", "top_confidence", "results", "advice", "created_at",
+            "status", "top_label", "top_confidence", "results", "advice", "verification", "created_at",
         ]
         read_only_fields = [f for f in fields if f not in ("image", "crop")]
 

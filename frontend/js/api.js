@@ -104,6 +104,7 @@ const real = {
   getDetection: (id) => request(`/detections/${id}/`),
   deleteDetection: (id) => request(`/detections/${id}/`, { method: "DELETE" }),
   detectionAdvice: (id, language) => request(`/detections/${id}/advice/`, { method: "POST", json: { language } }),
+  verifyDetection: (id, language) => request(`/detections/${id}/verify/`, { method: "POST", json: { language } }),
 
   weather: (city) => request(`/advisory/weather/?city=${encodeURIComponent(city)}`),
   advisory: (city, language) => request("/advisory/", { method: "POST", json: { city, language } }),

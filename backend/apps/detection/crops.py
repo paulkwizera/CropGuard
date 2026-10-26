@@ -57,6 +57,23 @@ def display_label(crop: str, code: str) -> str:
     return entry or code
 
 
+def condition_names(crop: str) -> list[str]:
+    """Every name the app can give a leaf of this crop: its diseases, then 'healthy'.
+
+    The maize model has no healthy class, but a maize leaf can still be healthy, so it gets a name too.
+    """
+    names, healthy = [], None
+    for entry in (_labels().get(crop) or {}).values():
+        if isinstance(entry, dict):
+            if entry.get("healthy"):
+                healthy = entry.get("name")
+            elif entry.get("name"):
+                names.append(entry["name"])
+        elif entry:
+            names.append(entry)
+    return [*names, healthy or f"Healthy {crop} leaf"]
+
+
 def is_healthy(crop: str, code: str) -> bool:
     """True for a 'healthy leaf' class (the cassava model has one; the maize model does not)."""
     entry = _entry(crop, code)

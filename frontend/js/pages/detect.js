@@ -6,7 +6,7 @@ import { escapeHtml, percent, renderAdvice, LANGUAGES } from "../components/form
 import { icon } from "../components/icons.js";
 import { toast } from "../components/toast.js";
 import { setBusy } from "../components/forms.js";
-import { cropName, isHealthy } from "../components/checks.js";
+import { confidenceBlock, cropName, isHealthy, isOther } from "../components/checks.js";
 import { adviceLang, t } from "../i18n.js";
 
 if (requireAuth()) init();
@@ -81,7 +81,7 @@ function init() {
   ["dragleave", "drop"].forEach((ev) => zone.addEventListener(ev, (e) => { e.preventDefault(); zone.classList.remove("is-over"); }));
   zone.addEventListener("drop", (e) => choose(e.dataTransfer.files[0]));
 
-  const reset = () => { file = null; current = null; adviceText = ""; photoError(""); show("photo"); $("camera-btn").focus(); };
+  const reset = () => { file = null; current = null; adviceText = ""; $("verify-box").hidden = true; photoError(""); show("photo"); $("camera-btn").focus(); };
   ["reset-btn", "error-reset", "again-btn"].forEach((id) => $(id).addEventListener("click", reset));
 
   // --- analysing
@@ -98,6 +98,11 @@ function init() {
         bar.firstElementChild.style.width = `${Math.round(p * 100)}%`;
         if (p >= 1) { $("busy-title").textContent = "Checking the leaf…"; bar.classList.add("is-indeterminate"); }
       }, crop);
+      // Gemini double-checks the photo and the server picks ONE final answer (see services/decision.py). We wait for it
+      // so the result never flips from one answer to another on screen. If Gemini is unavailable, the detector's own
+      // answer is shown on its own.
+      $("busy-title").textContent = "Double-checking with Gemini…";
+      try { current = await api.verifyDetection(current.id, $("advice-lang").value); } catch { /* keep the detector's answer */ }
       await renderResult(current);
     } catch (err) {
       $("error-text").textContent = err.message;
@@ -111,16 +116,29 @@ function init() {
   // --- result
   async function renderResult(d) {
     show("result", "diagnosis");
+    renderVerification(d);
     const drawn = await drawDetection($("result-canvas"), d.image, d);
     if (!drawn) $("result-canvas").replaceWith(Object.assign(document.createElement("img"), { src: preview, alt: "Your photo" }));
     const summary = $("result-summary");
     $("advice-out").hidden = true; $("copy-advice").hidden = true; adviceText = "";
 
+    if (isOther(d)) {   // Gemini says this is not a maize or cassava leaf: no disease verdict is given at all
+      const v = d.verification || {};
+      const first = d.verification?.resolution?.basis === "not_a_leaf"
+        ? "Gemini cannot see a plant leaf in this photo."
+        : v.plant_name ? t("Gemini thinks this is a {plant} leaf.", { plant: escapeHtml(v.plant_name) }) : "Gemini does not think this is a maize or cassava leaf.";
+      summary.innerHTML = `<span class="badge badge--warn">${icon("info", "icon--sm")}Not checked</span>
+        <h2 class="result-title">${escapeHtml(d.top_label)}</h2>
+        <p class="muted">${first} CropGuard only checks maize and cassava, so it gives no disease result for this photo.</p>
+        ${v.explanation ? `<p class="muted" style="font-size:var(--fs-sm)">${escapeHtml(v.explanation)}</p>` : ""}
+        <p class="disclaimer">${icon("info", "icon--sm")}<span>Take a clear, close photo of one maize or cassava leaf in daylight and check again.</span></p>`;
+      $("advice-section").hidden = true;
+      return;
+    }
     if (isHealthy(d)) {
       summary.innerHTML = `<span class="badge badge--ok">${icon("check-circle", "icon--sm")}Looks healthy</span> <span class="badge">${escapeHtml(cropName(d))}</span>
         <h2 class="result-title">${escapeHtml(d.top_label)}</h2>
-        <p class="conf-line"><strong>${percent(d.top_confidence)}</strong> <span class="muted">confidence</span></p>
-        <div class="meter" role="img" aria-label="${escapeHtml(t("Confidence {pct}", { pct: percent(d.top_confidence) }))}"><span style="width:${percent(d.top_confidence)}"></span></div>
+        ${confidenceBlock(d)}
         <p class="muted" style="margin-top:1rem">No disease was detected on this leaf. Check a few more leaves from different parts of the field to be sure.</p>${recognisedLine(d)}`;
       $("advice-section").hidden = true;
       return;
@@ -137,8 +155,7 @@ function init() {
     const others = (d.results || []).slice(1, 4);
     summary.innerHTML = `<span class="badge badge--issue">${icon("alert", "icon--sm")}Problem detected</span> <span class="badge">${escapeHtml(cropName(d))}</span>
       <h2 class="result-title">${escapeHtml(d.top_label)}</h2>
-      <p class="conf-line"><strong>${percent(d.top_confidence)}</strong> <span class="muted">confidence</span></p>
-      <div class="meter" role="img" aria-label="${escapeHtml(t("Confidence {pct}", { pct: percent(d.top_confidence) }))}"><span style="width:${percent(d.top_confidence)}"></span></div>
+      ${confidenceBlock(d)}
       ${others.length ? `<p class="muted" style="margin:1rem 0 .25rem;font-size:var(--fs-sm)">Also considered</p><ul class="also">${others.map((r) => `<li><span>${escapeHtml(r.label)}</span><span class="faint">${percent(r.confidence)}</span></li>`).join("")}</ul>` : ""}
       ${recognisedLine(d)}
       <p class="disclaimer">${icon("info", "icon--sm")}<span>This is a computer estimate from one photo. For a severe outbreak, confirm with your local agronomist.</span></p>`;
@@ -146,9 +163,49 @@ function init() {
     if (d.advice) showAdvice(d.advice);
   }
 
+  // ---- how the final answer was chosen. The detector and Gemini each looked at the photo; the server picked one
+  // (resolution.winner) and already stored it as the result above. This card says who decided, and why.
+  const BASIS = {
+    confirmed:             { badge: "badge--ok",   icon: "check-circle", title: "Confirmed by Gemini" },
+    unconfirmed:           { badge: "badge--warn", icon: "info",         title: "Gemini could not confirm this", detail: "Treat this result with care and check a few more leaves." },
+    gemini_more_certain:   { badge: "badge--ok",   icon: "sparkle",      title: "Gemini and the detector disagreed", detail: "Gemini was highly certain and the detector was not, so Gemini's answer is shown." },
+    detector_more_certain: { badge: "badge--ok",   icon: "check-circle", title: "Gemini and the detector disagreed", detail: "The detector was more sure, so its answer is shown." },
+  };
+
+  function renderVerification(d) {
+    const box = $("verify-box");
+    const v = d.verification || {};
+    const r = v.resolution;
+    box.hidden = isOther(d);
+    if (isOther(d)) return;
+    if (!r) {   // Gemini did not answer (no key, slow, offline)
+      box.innerHTML = `<h3>Second opinion</h3><p class="muted">Gemini could not double-check this photo, so this is the detector's answer on its own.</p>`;
+      return;
+    }
+    const meta = BASIS[r.basis] || BASIS.unconfirmed;
+    const was = r.detector || {};
+    const cropLine = r.crop_changed
+      ? (d.crop === "cassava"
+        ? "Gemini recognised a cassava leaf, so the photo was checked again with the cassava detector."
+        : "Gemini recognised a maize leaf, so the photo was checked again with the maize detector.")
+      : "";
+    // the answer that did NOT win, so the farmer can see what was set aside
+    const other = r.basis === "gemini_more_certain" && was.top_label
+        ? `<p class="verify-sees"><strong>The detector said:</strong> <span>${escapeHtml(was.top_label)}</span> <span class="faint">${percent(was.top_confidence)}</span></p>`
+      : r.basis === "detector_more_certain" && v.condition && v.condition !== "Cannot tell"
+        ? `<p class="verify-sees"><strong>Gemini suggested:</strong> <span>${escapeHtml(v.condition)}</span></p>`
+      : "";
+    box.innerHTML = `<h3>Second opinion</h3>
+      <span class="badge ${meta.badge}">${icon(meta.icon, "icon--sm")}${meta.title}</span>
+      ${cropLine ? `<p class="verify-why">${cropLine}</p>` : ""}
+      ${meta.detail ? `<p class="verify-why">${meta.detail}</p>` : ""}
+      ${other}
+      ${v.explanation ? `<p class="verify-why">${escapeHtml(v.explanation)}</p>` : ""}`;
+  }
+
   // After an Auto-detect check, say which crop was recognised and how to correct it if that is wrong.
   function recognisedLine(d) {
-    if (requested !== "auto") return "";
+    if (requested !== "auto" || d.verification?.resolution?.crop_changed) return "";
     const text = d.crop === "cassava"
       ? "CropGuard recognised this as a cassava leaf. Not right? Choose the crop yourself and check again."
       : "CropGuard recognised this as a maize leaf. Not right? Choose the crop yourself and check again.";

@@ -79,6 +79,16 @@ export const mock = {
     return d;
   },
 
+  async verifyDetection(id, language) {
+    await wait(900);
+    const d = store.find((x) => x.id === id);
+    const was = { crop: d.crop, status: d.status, top_label: d.top_label, top_confidence: d.top_confidence };
+    d.verification = { verdict: "agree", crop: d.crop, condition: d.top_label || "Cannot tell", certainty: "medium", language,
+      explanation: `(mock, ${language}) The photo looks consistent with ${d.top_label || "a healthy leaf"}.`,
+      resolution: { winner: "detector", basis: "confirmed", crop_changed: false, detector: was } };
+    return d;
+  },
+
   async weather(city) {
     await wait();
     const readings = Array.from({ length: 8 }, (_, i) => ({

@@ -1,7 +1,7 @@
 import { api } from "../api.js";
 import { requireAuth } from "../auth.js";
 import { mountShell } from "../components/shell.js";
-import { confidenceText, cropName, dateText, hasIssue, isHealthy, issueBadge, thumb } from "../components/checks.js";
+import { confidenceBlock, confidenceText, cropName, dateText, hasIssue, isHealthy, isOther, issueBadge, thumb } from "../components/checks.js";
 import { confirmDialog, enableBackdropClose } from "../components/dialog.js";
 import { escapeHtml, formatDate, LANGUAGES, percent, renderAdvice } from "../components/format.js";
 import { drawDetection } from "../components/image.js";
@@ -46,17 +46,19 @@ async function init() {
   function buildFilter() {
     const labels = [...new Set(state.items.filter(hasIssue).map((d) => d.top_label))].sort();
     const hasHealthy = state.items.some(isHealthy);
-    const hasNone = state.items.some((d) => !hasIssue(d) && !isHealthy(d));
+    const hasNone = state.items.some((d) => !hasIssue(d) && !isHealthy(d) && !isOther(d));
+    const hasOther = state.items.some(isOther);
     $("filter").innerHTML = `<option value="">All results</option>` +
       labels.map((l) => `<option value="${escapeHtml(l)}">${escapeHtml(l)}</option>`).join("") +
       (hasHealthy ? `<option value="__healthy__">Healthy leaf</option>` : "") +
-      (hasNone ? `<option value="__none__">No disease found</option>` : "");
+      (hasNone ? `<option value="__none__">No disease found</option>` : "") +
+      (hasOther ? `<option value="__other__">Not maize or cassava</option>` : "");
     $("filter").value = [...$("filter").options].some((o) => o.value === state.filter) ? state.filter : "";
     state.filter = $("filter").value;
   }
 
   function visible() {
-    let list = state.items.filter((d) => !state.filter || (state.filter === "__none__" ? !hasIssue(d) && !isHealthy(d) : state.filter === "__healthy__" ? isHealthy(d) : d.top_label === state.filter));
+    let list = state.items.filter((d) => !state.filter || (state.filter === "__none__" ? !hasIssue(d) && !isHealthy(d) && !isOther(d) : state.filter === "__other__" ? isOther(d) : state.filter === "__healthy__" ? isHealthy(d) : d.top_label === state.filter));
     const by = {
       new: (a, b) => new Date(b.created_at) - new Date(a.created_at),
       old: (a, b) => new Date(a.created_at) - new Date(b.created_at),
@@ -108,8 +110,7 @@ async function init() {
         <div class="detail-info stack">
           <div>${issueBadge(d)}<h3 class="result-title" style="margin-top:.5rem">${escapeHtml(d.top_label || "No disease found")}</h3>
             <p class="faint" style="margin:0"><span>${escapeHtml(cropName(d))}</span> · ${escapeHtml(formatDate(d.created_at))}</p></div>
-          ${hasIssue(d) || isHealthy(d) ? `<div><p class="conf-line"><strong>${percent(d.top_confidence)}</strong> <span class="muted">confidence</span></p>
-            <div class="meter" role="img" aria-label="${escapeHtml(t("Confidence {pct}", { pct: percent(d.top_confidence) }))}"><span style="width:${percent(d.top_confidence)}"></span></div></div>` : `<p class="muted">The model did not find a problem it was confident about.</p>`}
+          ${hasIssue(d) || isHealthy(d) ? `<div>${confidenceBlock(d)}</div>` : isOther(d) ? `<p class="muted">CropGuard only checks maize and cassava leaves.</p>` : `<p class="muted">The model did not find a problem it was confident about.</p>`}
           ${hasIssue(d) ? `<div class="advice">
             <h3>Treatment advice</h3>
             <div id="d-advice" class="prose-ai advice-out" ${d.advice ? "" : "hidden"}>${d.advice ? renderAdvice(d.advice) : ""}</div>
