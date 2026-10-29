@@ -11,7 +11,7 @@ export const isOther = (d) => statusOf(d) === "other";
 
 export function thumb(d, cls = "") {
   return `<div class="thumb ${cls}">${d.image
-    ? `<img src="${escapeHtml(d.image)}" alt="" loading="lazy" decoding="async">`
+    ? `<img src="${escapeHtml(d.image)}" alt="" loading="lazy" decoding="async" onerror="this.remove()">`
     : icon("leaf", "icon--lg")}</div>`;
 }
 

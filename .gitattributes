@@ -2,3 +2,7 @@ data/Microdata/AHS2024_Section3_4_CROP[[:space:]]GROWN filter=lfs diff=lfs merge
 SEEDS[[:space:]]AND[[:space:]]PRODUCTION[[:space:]]&[[:space:]]AGRICULTURAL[[:space:]]INPUTS[[:space:]]AND[[:space:]]PRACTICES.dta filter=lfs diff=lfs merge=lfs -text
 data/Microdata/AHS2024_Section3_4_CROP[[:space:]]GROWN,[[:space:]]SEEDS[[:space:]]AND[[:space:]]PRODUCTION[[:space:]]&[[:space:]]AGRICULTURAL[[:space:]]INPUTS[[:space:]]AND[[:space:]]PRACTICES.dta filter=lfs diff=lfs merge=lfs -text
 *.dta filter=lfs diff=lfs merge=lfs -text
+
+# Shell scripts and the Python pin run on Linux (Render): they must keep Unix line endings
+*.sh text eol=lf
+.python-version text eol=lf

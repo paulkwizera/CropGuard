@@ -434,3 +434,16 @@ class DecisionTests(SimpleTestCase):
     def test_the_detectors_original_answer_is_always_recorded(self):
         out = self.decide(self.detector("cassava", "Cassava Green Mottle", 0.55), self.gemini("cassava", "Cassava Mosaic Disease"))
         self.assertEqual(out["resolution"]["detector"], {"crop": "cassava", "status": "disease", "top_label": "Cassava Green Mottle", "top_confidence": 0.55})
+
+
+class PhotoNameTests(SimpleTestCase):
+    def test_photos_get_random_unguessable_names_keeping_a_safe_extension(self):
+        import re
+        from .models import detection_photo_path
+
+        a, b = detection_photo_path(None, "leaf.jpg"), detection_photo_path(None, "leaf.jpg")
+        self.assertRegex(a, r"^detections/\d{4}/\d{2}/[0-9a-f]{32}\.jpg$")
+        self.assertNotEqual(a, b)
+        self.assertTrue(detection_photo_path(None, "LEAF.PNG").endswith(".png"))
+        for hostile in ("leaf.php", "../../etc/passwd", "noextension", "x.html"):
+            self.assertRegex(detection_photo_path(None, hostile), r"^detections/\d{4}/\d{2}/[0-9a-f]{32}\.jpg$")

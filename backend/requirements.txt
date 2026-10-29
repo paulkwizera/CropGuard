@@ -4,13 +4,17 @@ django-mongodb-backend>=5.2,<5.3
 djangorestframework>=3.15
 djangorestframework-simplejwt>=5.3
 django-cors-headers>=4.4
+whitenoise>=6.6
 python-dotenv>=1.0
 Pillow>=10.0
 requests>=2.32
 gunicorn>=22.0
 
+# --- MongoDB Atlas connection strings (mongodb+srv://...) need this
+dnspython>=2.6
+
 # --- AI
+# CPU-only PyTorch (a few hundred MB instead of several GB, and far less memory): the models run on the CPU anyway.
+--extra-index-url https://download.pytorch.org/whl/cpu
 ultralytics>=8.4.184    # YOLOv8 (pulls in torch + opencv); cassava.pt was trained with 8.4.184
 google-genai>=1.0       # Gemini advisor
-gunicorn
-django-cors-headers

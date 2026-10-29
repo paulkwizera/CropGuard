@@ -78,8 +78,12 @@ cd backend && python manage.py test
 
 See [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) for the branch and pull-request routine.
 
+## Putting it online
+Both parts run on Render: the website (static site) at <https://cropguard-9fmd.onrender.com> and the backend at
+<https://cropguarv1.onrender.com>. Pushing to `main` redeploys them. The exact dashboard settings, environment variables
+and troubleshooting are in [`docs/DEPLOY.md`](docs/DEPLOY.md).
+
 ## Next steps (suggested)
 1. Run the backend against a real MongoDB: `migrate`, then `python manage.py test` (the database tests have not been run against a live MongoDB yet).
 2. Try both detectors on real field photos with `try_detector` and tune `YOLO_CONF` in `.env`.
 3. Add rate limiting on the weather endpoint, and make `DELETE` also remove the image file.
-4. Deployment settings (`DJANGO_DEBUG=False`, `ALLOWED_HOSTS`, Gunicorn, media storage).

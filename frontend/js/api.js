@@ -1,8 +1,12 @@
 // All HTTP calls live here. Pages never call fetch() directly.
 // Keep function names and response shapes in sync with docs/API.md.
-import { CONFIG } from "./config.js";
+import { CONFIG, IS_LOCAL } from "./config.js";
 import { clearTokens, getTokens, saveTokens } from "./auth.js";
 import { mock } from "./mock.js";
+
+// Render puts an idle backend to sleep and it takes up to a minute to wake. Knocking on its door as soon as any page
+// opens means it is usually awake by the time the farmer logs in or picks a photo.
+if (!IS_LOCAL && !CONFIG.USE_MOCK) fetch(`${CONFIG.API_BASE}/health/`).catch(() => {});
 
 export class ApiError extends Error {
   constructor(message, status, details) { super(message); this.status = status; this.details = details; }

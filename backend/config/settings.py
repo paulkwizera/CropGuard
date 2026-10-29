@@ -22,11 +22,17 @@ def env_list(name: str, default: str = "") -> list[str]:
 
 
 # --- Core -------------------------------------------------------------------
-DEBUG = os.getenv("DJANGO_DEBUG", "True") == "True"
+ON_RENDER = os.getenv("RENDER") == "true"  # Render sets RENDER=true on every service it runs
+# Local development defaults to DEBUG on; on Render it defaults to OFF (set DJANGO_DEBUG=True there only to debug).
+DEBUG = os.getenv("DJANGO_DEBUG", "False" if ON_RENDER else "True") == "True"
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-insecure-key-replace-me-in-dotenv")
 if not DEBUG and SECRET_KEY == "dev-only-insecure-key-replace-me-in-dotenv":
     raise ImproperlyConfigured("Set DJANGO_SECRET_KEY when DJANGO_DEBUG is not True.")
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1,cropguarv1.onrender.com")
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+if os.getenv("RENDER_EXTERNAL_HOSTNAME"):  # e.g. cropguarv1.onrender.com: Render tells us our own address
+    ALLOWED_HOSTS.append(os.environ["RENDER_EXTERNAL_HOSTNAME"])
+# The address of the website (frontend) that is allowed to call this API. No trailing slash.
+FRONTEND_URL = os.getenv("FRONTEND_URL", "https://cropguard-9fmd.onrender.com").rstrip("/")
 
 INSTALLED_APPS = [
     "config.apps.MongoAdminConfig",
@@ -45,12 +51,12 @@ INSTALLED_APPS = [
     "apps.detection",
     "apps.advisory",
     "apps.assistant",
-    
 ]
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",  # must stay first
     "django.middleware.security.SecurityMiddleware",
+    "whitenoise.middleware.WhiteNoiseMiddleware",  # serves the admin's CSS/JS in production
     "django.contrib.sessions.middleware.SessionMiddleware",
     "django.middleware.common.CommonMiddleware",
     "django.middleware.csrf.CsrfViewMiddleware",
@@ -126,17 +132,49 @@ SIMPLE_JWT = {
 }
 
 # --- CORS (the frontend runs on a different port during development) ---------
-CORS_ALLOWED_ORIGINS = env_list(
-    "CORS_ALLOWED_ORIGINS",
-    "http://localhost:5500,http://127.0.0.1:5500,http://localhost:8080,http://127.0.0.1:8080,https://cropguarv1.onrender.com",
-)
+CORS_ALLOWED_ORIGINS = [
+    origin.rstrip("/")
+    for origin in env_list(
+        "CORS_ALLOWED_ORIGINS",
+        "http://localhost:5500,http://127.0.0.1:5500,http://localhost:8080,http://127.0.0.1:8080",
+    )
+]
+if FRONTEND_URL not in CORS_ALLOWED_ORIGINS:
+    CORS_ALLOWED_ORIGINS.append(FRONTEND_URL)
+
+# Django's admin login (a form post) must come from an address we trust.
+CSRF_TRUSTED_ORIGINS = [FRONTEND_URL, *env_list("CSRF_TRUSTED_ORIGINS")]
+if os.getenv("RENDER_EXTERNAL_HOSTNAME"):
+    CSRF_TRUSTED_ORIGINS.append(f"https://{os.environ['RENDER_EXTERNAL_HOSTNAME']}")
+
+if not DEBUG:
+    # Render ends the HTTPS connection at its edge and forwards plain HTTP to us. Without this, Django thinks every
+    # request is http:// and builds http:// photo links, which the browser blocks on the https:// website.
+    SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
 
 # --- Static & media ---------------------------------------------------------
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 MEDIA_URL = "media/"
-MEDIA_ROOT = BASE_DIR / "media"
+# Uploaded leaf photos. On Render the normal disk is wiped on every deploy/restart: to keep photos, attach a
+# persistent disk (e.g. mounted at /var/data) and set MEDIA_ROOT=/var/data/media.
+MEDIA_ROOT = Path(os.getenv("MEDIA_ROOT") or BASE_DIR / "media")
+STORAGES = {
+    "default": {"BACKEND": "django.core.files.storage.FileSystemStorage"},
+    "staticfiles": {"BACKEND": "whitenoise.storage.CompressedStaticFilesStorage"},
+}
 DATA_UPLOAD_MAX_MEMORY_SIZE = 10 * 1024 * 1024  # 10 MB
+
+# --- Logging (Render shows whatever is printed to the console) --------------
+# With DEBUG off Django prints no tracebacks by default; this keeps 500 errors visible in Render's Logs tab.
+LOGGING = {
+    "version": 1,
+    "disable_existing_loggers": False,
+    "handlers": {"console": {"class": "logging.StreamHandler"}},
+    "root": {"handlers": ["console"], "level": os.getenv("LOG_LEVEL", "INFO")},
+}
 
 # --- i18n -------------------------------------------------------------------
 LANGUAGE_CODE = "en-us"
