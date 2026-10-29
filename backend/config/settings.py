@@ -26,7 +26,7 @@ DEBUG = os.getenv("DJANGO_DEBUG", "True") == "True"
 SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", "dev-only-insecure-key-replace-me-in-dotenv")
 if not DEBUG and SECRET_KEY == "dev-only-insecure-key-replace-me-in-dotenv":
     raise ImproperlyConfigured("Set DJANGO_SECRET_KEY when DJANGO_DEBUG is not True.")
-ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1")
+ALLOWED_HOSTS = env_list("DJANGO_ALLOWED_HOSTS", "localhost,127.0.0.1","cropguarv1.onrender.com")
 
 INSTALLED_APPS = [
     "config.apps.MongoAdminConfig",
@@ -45,6 +45,7 @@ INSTALLED_APPS = [
     "apps.detection",
     "apps.advisory",
     "apps.assistant",
+    
 ]
 
 MIDDLEWARE = [
@@ -128,6 +129,7 @@ SIMPLE_JWT = {
 CORS_ALLOWED_ORIGINS = env_list(
     "CORS_ALLOWED_ORIGINS",
     "http://localhost:5500,http://127.0.0.1:5500,http://localhost:8080,http://127.0.0.1:8080",
+    "https://cropguarv1.onrender.com",
 )
 
 # --- Static & media ---------------------------------------------------------
