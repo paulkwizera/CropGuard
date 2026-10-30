@@ -201,8 +201,16 @@ YOLO_CONF = float(os.getenv("YOLO_CONF", "0.5"))    # minimum confidence to repo
 YOLO_IMGSZ = int(os.getenv("YOLO_IMGSZ", "640"))    # the maize model was trained at 640
 MAX_UPLOAD_MB = int(os.getenv("MAX_UPLOAD_MB", "8"))
 
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY", "")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
+# The key is tidied: a value pasted into a dashboard often has a trailing space/newline or quote marks. GEMINI_API_KEY also works.
+GOOGLE_API_KEY = (os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY") or "").strip().strip("\"'").strip()
+GEMINI_MODEL = (os.getenv("GEMINI_MODEL") or "gemini-3.6-flash").strip()
+# Tried in this order when GEMINI_MODEL is busy, over quota or unavailable (comma-separated). Keep it current.
+GEMINI_FALLBACK_MODELS = os.getenv("GEMINI_FALLBACK_MODELS", "gemini-3.7-flash,gemini-3.5-flash")
+# Gemini 3 models "think" before answering (MEDIUM by default = slow). "low" is much faster and plenty for CropGuard.
+# Valid on every current Flash model: low, medium, high. (Do NOT use "minimal": Gemini 3.7/3.8 refuse it.) Empty = model default.
+GEMINI_THINKING = os.getenv("GEMINI_THINKING", "low").strip()
+GEMINI_TIMEOUT = float(os.getenv("GEMINI_TIMEOUT", "25"))   # seconds for ONE request to Google
+GEMINI_BUDGET = float(os.getenv("GEMINI_BUDGET", "45"))     # seconds for a whole answer, retries and fallbacks included
 # When Gemini disagrees about WHICH DISEASE (same crop), the detector keeps its answer if it is at least this sure.
 # Below it, Gemini wins only if it is itself highly certain. (Crop identity is always Gemini's call.)
 VERIFY_DETECTOR_TRUST = float(os.getenv("VERIFY_DETECTOR_TRUST", "0.80"))

@@ -17,4 +17,4 @@ dnspython>=2.6
 # CPU-only PyTorch (a few hundred MB instead of several GB, and far less memory): the models run on the CPU anyway.
 --extra-index-url https://download.pytorch.org/whl/cpu
 ultralytics>=8.4.184    # YOLOv8 (pulls in torch + opencv); cassava.pt was trained with 8.4.184
-google-genai>=1.0       # Gemini advisor
+google-genai>=2.33.0    # Gemini advisor. Keep it recent: new 'AQ.' API keys are rejected by old SDKs
