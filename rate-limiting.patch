@@ -1,0 +1,127 @@
+diff --git a/backend/apps/accounts/urls.py b/backend/apps/accounts/urls.py
+index 6e637f9..21e979f 100644
+--- a/backend/apps/accounts/urls.py
++++ b/backend/apps/accounts/urls.py
+@@ -1,11 +1,11 @@
+ from django.urls import path
+-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
++from rest_framework_simplejwt.views import TokenRefreshView
+ 
+-from .views import MeView, RegisterView
++from .views import LoginView, MeView, RegisterView
+ 
+ urlpatterns = [
+     path("register/", RegisterView.as_view(), name="register"),
+-    path("login/", TokenObtainPairView.as_view(), name="login"),
++    path("login/", LoginView.as_view(), name="login"),
+     path("refresh/", TokenRefreshView.as_view(), name="token-refresh"),
+     path("me/", MeView.as_view(), name="me"),
+ ]
+diff --git a/backend/apps/accounts/views.py b/backend/apps/accounts/views.py
+index 551cdd7..c21edec 100644
+--- a/backend/apps/accounts/views.py
++++ b/backend/apps/accounts/views.py
+@@ -1,5 +1,7 @@
+ from rest_framework import generics
+ from rest_framework.permissions import AllowAny
++from rest_framework.throttling import ScopedRateThrottle
++from rest_framework_simplejwt.views import TokenObtainPairView
+ 
+ from .serializers import RegisterSerializer, UserSerializer
+ 
+@@ -8,6 +10,15 @@ class RegisterView(generics.CreateAPIView):
+     serializer_class = RegisterSerializer
+     permission_classes = [AllowAny]
+     authentication_classes: list = []
++    throttle_classes = [ScopedRateThrottle]
++    throttle_scope = "register"
++
++
++class LoginView(TokenObtainPairView):
++    """POST /api/auth/login/ - same as simplejwt's, but rate limited."""
++
++    throttle_classes = [ScopedRateThrottle]
++    throttle_scope = "login"
+ 
+ 
+ class MeView(generics.RetrieveUpdateAPIView):
+diff --git a/backend/apps/advisory/views.py b/backend/apps/advisory/views.py
+index 14baa74..0cbaee3 100644
+--- a/backend/apps/advisory/views.py
++++ b/backend/apps/advisory/views.py
+@@ -1,4 +1,5 @@
+ from rest_framework.response import Response
++from rest_framework.throttling import ScopedRateThrottle
+ from rest_framework.views import APIView
+ 
+ from .serializers import AdvisoryRequestSerializer, WeatherQuerySerializer
+@@ -8,6 +9,9 @@ from .services import advisor, weather
+ class WeatherView(APIView):
+     """GET /api/advisory/weather/?city=Musanze -> next-24h forecast summary."""
+ 
++    throttle_classes = [ScopedRateThrottle]
++    throttle_scope = "weather"
++
+     def get(self, request):
+         query = WeatherQuerySerializer(data=request.query_params)
+         query.is_valid(raise_exception=True)
+@@ -19,6 +23,9 @@ class WeatherView(APIView):
+ class AdvisoryView(APIView):
+     """POST /api/advisory/ {city, language} -> forecast + AI farming advice."""
+ 
++    throttle_classes = [ScopedRateThrottle]
++    throttle_scope = "ai"
++
+     def post(self, request):
+         body = AdvisoryRequestSerializer(data=request.data)
+         body.is_valid(raise_exception=True)
+diff --git a/backend/apps/detection/views.py b/backend/apps/detection/views.py
+index 3c90c68..4a7ed76 100644
+--- a/backend/apps/detection/views.py
++++ b/backend/apps/detection/views.py
+@@ -1,6 +1,7 @@
+ from rest_framework import mixins, status, viewsets
+ from rest_framework.decorators import action
+ from rest_framework.response import Response
++from rest_framework.throttling import ScopedRateThrottle
+ 
+ from apps.advisory.services import advisor
+ from apps.core.exceptions import ServiceUnavailable
+@@ -34,6 +35,15 @@ class DetectionViewSet(
+     serializer_class = DetectionSerializer
+     lookup_value_regex = "[0-9a-f]{24}"  # MongoDB ObjectId
+ 
++    # Only the expensive actions are limited (a photo check runs the model, advice calls Gemini);
++    # listing, viewing and deleting checks are not.
++    throttle_classes = [ScopedRateThrottle]
++    THROTTLE_SCOPES = {"create": "upload", "advice": "ai"}
++
++    def get_throttles(self):
++        self.throttle_scope = self.THROTTLE_SCOPES.get(self.action)  # None = no limit for this action
++        return super().get_throttles()
++
+     def get_queryset(self):
+         return Detection.objects.filter(user=self.request.user)
+ 
+diff --git a/backend/config/settings.py b/backend/config/settings.py
+index 9441435..6dbd672 100644
+--- a/backend/config/settings.py
++++ b/backend/config/settings.py
+@@ -105,7 +105,16 @@ REST_FRAMEWORK = {
+     "DEFAULT_PERMISSION_CLASSES": ["rest_framework.permissions.IsAuthenticated"],
+     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
+     "PAGE_SIZE": 20,
+-    "DEFAULT_THROTTLE_RATES": {"assistant": os.getenv("ASSISTANT_RATE", "30/min")},
++    # Rate limits ("N/min" or "N/hour"). Views opt in with throttle_scope; each farmer (or, when
++    # signed out, each IP address) gets their own counter. Override any of them in .env.
++    "DEFAULT_THROTTLE_RATES": {
++        "assistant": os.getenv("ASSISTANT_RATE", "30/min"),   # AI chat questions
++        "login": os.getenv("LOGIN_RATE", "20/min"),           # sign-in attempts (slows password guessing)
++        "register": os.getenv("REGISTER_RATE", "20/hour"),    # new accounts (generous: shared phone networks)
++        "upload": os.getenv("UPLOAD_RATE", "60/hour"),        # photo checks (each one runs the model)
++        "ai": os.getenv("AI_RATE", "30/hour"),                # treatment advice + weather advice (Gemini)
++        "weather": os.getenv("WEATHER_RATE", "120/hour"),     # forecast lookups (OpenWeather)
++    },
+ }
+ 
+ SIMPLE_JWT = {

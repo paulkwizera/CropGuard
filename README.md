@@ -8,7 +8,7 @@ A web app that helps Rwandan farmers check **maize and cassava** leaves for dise
 
 ```
 CropGuard/
-├── backend/                 Django REST API  (teammate)
+├── backend/                 Django REST API  (Backend developer)
 │   ├── config/              settings, urls
 │   └── apps/
 │       ├── accounts/        farmer accounts + JWT login
@@ -18,7 +18,7 @@ CropGuard/
 │       ├── advisory/        weather + Gemini advice
 │       ├── assistant/       "Ask the AI": farming Q&A chat (Gemini)
 │       └── core/            health check, shared exceptions
-├── frontend/                HTML + CSS + JS, no build step  (you)
+├── frontend/                HTML + CSS + JS, no build step  (Frontend developer)
 │   ├── index, story, login, register, dashboard, detect, history, advisory, assistant, account  (.html)
 │   ├── css/  js/  assets/   see frontend/README.md
 │   └── assets/data/story.json   survey numbers behind the "Our story" charts
@@ -26,7 +26,7 @@ CropGuard/
 │   ├── weights/best.pt      maize detector       (classes MLB, MSV)
 │   ├── weights/cassava.pt   cassava detector     (3 diseases + Healthy)
 │   └── labels.json          class code -> readable name
-├── data/                    survey microdata (NOT in Git) and the script that turns it into story.json
+├── data/                    survey microdata (tracked with Git LFS) and the script that turns it into story.json
 ├── docs/                    API.md (the contract) and GIT_WORKFLOW.md
 ├── run-backend.bat/.sh      starts the backend
 ├── run-frontend.bat/.sh     starts the frontend
@@ -64,26 +64,54 @@ The frontend talks to the real backend by default. To look around with sample da
 cd backend && python manage.py test
 ```
 
+## How to use it
+1. Register or sign in, and pick your language (Kinyarwanda, English, Français).
+2. **Check a plant:** upload a photo of one leaf, read the result, and tap *Get advice*. CropGuard detects the crop automatically, or you can choose Maize or Cassava yourself.
+3. **History:** filter or sort past checks, open one for details, or delete it.
+4. **Weather:** choose your district to see the forecast and advice.
+5. **Ask the AI:** type any farming question.
+
 ## What each part does
-- **Check a plant:** choose Maize or Cassava, upload a photo, see the framed disease (or a healthy leaf) and ask for treatment advice. A crop switches from "Coming soon" to available by itself when its weights file exists in `ml/weights/`.
+- **Check a plant:** upload a photo and the crop is detected automatically (or choose Maize or Cassava), then see the framed disease (or a healthy leaf) and ask for treatment advice. A crop switches from "Coming soon" to available by itself when its weights file exists in `ml/weights/`.
 - **Weather advice:** 24-hour forecast chart plus advice, with Kinyarwanda / English / Français tabs right on the result.
 - **Ask the AI:** farming questions answered by Gemini in the farmer's language. The conversation stays in the browser; the server stores nothing.
 - **Our story:** the case for CropGuard, drawn from the AHS2024 survey. Rebuild its numbers with `python data/build_story_data.py` (see `data/README.md`).
 
+## What the app communicates
+- **Check result:** the detected disease (or healthy leaf), a confidence percentage, and a frame on the photo showing where it was found. It is a guide, not a diagnosis.
+- **Dashboard:** total checks, problems found, most common disease, last check, recent checks and today's weather.
+- **Weather advice:** a 24-hour temperature and rain chart, plus a plain-language call on whether to irrigate or spray.
+- **Our story:** more than half of crop plots (52.6%) had a smaller harvest than the season before (55.8% for maize, 43.6% for cassava), and catching disease early is one of the few things a farmer can still do while the crop is growing.
+
+## Data used
+- **Leaf photos (from users):** uploaded by farmers, saved with the detection result (crop, disease, confidence) so they can see their history. Only the owner can see them.
+- **Disease detectors:** YOLOv8 models trained on public plant-disease image datasets for maize (MLB, MSV) and cassava (3 diseases + healthy).
+- **Weather:** OpenWeatherMap 5-day / 3-hour forecast; the app uses the next 24 hours for the farmer's district.
+- **Survey data:** National Institute of Statistics of Rwanda (NISR) Agricultural Household Survey 2024 (AHS2024), summarised for the "Our story" page.
+- **AI text:** Gemini writes treatment advice and weather advice from the result or forecast.
+
+## Rate limits
+The expensive actions are limited so the API and the paid services behind it are not overloaded. Each signed-in farmer gets their own counter (signed-out requests are counted per IP address). Every limit can be changed in `.env`.
+
+| Action | Default | `.env` setting |
+|--------|---------|----------------|
+| Sign in | 20 per minute | `LOGIN_RATE` |
+| Create an account | 20 per hour | `REGISTER_RATE` |
+| Photo check (runs the model) | 60 per hour | `UPLOAD_RATE` |
+| Treatment advice and weather advice (Gemini) | 30 per hour | `AI_RATE` |
+| Weather forecast lookup | 120 per hour | `WEATHER_RATE` |
+| Ask the AI (chat) | 30 per minute | `ASSISTANT_RATE` |
+
+Listing, viewing and deleting past checks are not limited.
+
 ## Who works where
 | Person | Folder | Reads | Never edits without a PR |
 |--------|--------|-------|--------------------------|
-| Backend dev | `backend/` | `docs/API.md` | `frontend/` |
-| Frontend dev | `frontend/` | `docs/API.md` | `backend/` |
+| Backend developer | `backend/` | `docs/API.md` | `frontend/` |
+| Frontend developer | `frontend/` | `docs/API.md` | `backend/` |
 
 See [`docs/GIT_WORKFLOW.md`](docs/GIT_WORKFLOW.md) for the branch and pull-request routine.
 
-## Putting it online
-Both parts run on Render: the website (static site) at <https://cropguard-9fmd.onrender.com> and the backend at
-<https://cropguarv1.onrender.com>. Pushing to `main` redeploys them. The exact dashboard settings, environment variables
-and troubleshooting are in [`docs/DEPLOY.md`](docs/DEPLOY.md).
-
 ## Next steps (suggested)
-1. Run the backend against a real MongoDB: `migrate`, then `python manage.py test` (the database tests have not been run against a live MongoDB yet).
-2. Try both detectors on real field photos with `try_detector` and tune `YOLO_CONF` in `.env`.
-3. Add rate limiting on the weather endpoint, and make `DELETE` also remove the image file.
+1. Try both detectors on real field photos with `try_detector` and tune `YOLO_CONF` in `.env`.
+2. Make `DELETE` also remove the image file.
