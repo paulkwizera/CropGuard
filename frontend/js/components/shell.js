@@ -81,7 +81,7 @@ export function mountShell(active) {
     <div class="side-foot">
       <span data-lang-switch></span>
       ${demoBadge()}
-      <a class="side-user" href="account.html"${cur(active, "account")}>
+      <a class="side-user" href="account.html" title="${escapeHtml(name)}"${cur(active, "account")}>
         <span class="avatar" data-avatar>${escapeHtml(initial(name))}</span>
         <span><span data-username>${escapeHtml(name)}</span><small>Account &amp; settings</small></span>
       </a>
@@ -115,6 +115,7 @@ export function mountShell(active) {
   // fill in the real username once the profile is available
   getMe().then((m) => {
     document.querySelector("[data-username]").textContent = m.username;
+    const su = document.querySelector(".side-user"); if (su) su.title = m.username;
     document.querySelectorAll("[data-avatar]").forEach((el) => { el.textContent = initial(m.username); });
   }).catch(() => {});
 }

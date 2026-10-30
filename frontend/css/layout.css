@@ -60,8 +60,10 @@ body.app { display: block; }
   .topbar, .tabbar { display: none; }
   .sidebar {
     display: flex; flex-direction: column; position: fixed; inset: 0 auto 0 0; width: var(--sidebar-w); z-index: 20;
-    overflow-y: auto; background: var(--forest-900); color: #fff; padding: var(--sp-5) var(--sp-4);
+    height: 100vh; height: 100dvh; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; scrollbar-color: rgba(255, 255, 255, 0.25) transparent;
+    background: var(--forest-900); color: #fff; padding: var(--sp-5) var(--sp-4);
   }
+  .sidebar > * { min-width: 0; }
   .sidebar .brand { padding: 0 var(--sp-3) var(--sp-5); }
   .side-nav { display: grid; gap: 2px; }
   .side-nav a {
@@ -75,10 +77,15 @@ body.app { display: block; }
   .side-nav a[aria-current="page"] { background: var(--forest-800); color: #fff; }
   .side-nav a[aria-current="page"]::before { content: ""; position: absolute; left: -0.5rem; top: 0.55rem; bottom: 0.55rem; width: 4px; border-radius: 0 4px 4px 0; background: var(--kernel); }
   .side-cta { margin: 0 0 var(--sp-5); }
-  .side-foot { margin-top: auto; border-top: 1px solid rgba(255, 255, 255, 0.14); padding-top: var(--sp-4); display: grid; gap: var(--sp-3); }
+  .side-foot { margin-top: auto; border-top: 1px solid rgba(255, 255, 255, 0.14); padding-top: var(--sp-4); display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--sp-3); min-width: 0; }
   .side-user { display: flex; align-items: center; gap: var(--sp-3); padding: var(--sp-2) var(--sp-3); border-radius: var(--r-sm); text-decoration: none; color: #fff; }
   .side-user:hover { background: var(--forest-800); color: #fff; }
+  .side-user { min-width: 0; }
   .side-user .avatar { width: 2.2rem; height: 2.2rem; }
+  .side-user > span:last-child { min-width: 0; flex: 1; }
+  .side-user [data-username] { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .side-user small { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .side-foot .btn { width: 100%; }
   .side-user small { display: block; color: rgba(255, 255, 255, 0.65); font-size: var(--fs-xs); }
   .app-main { padding: var(--sp-7) var(--sp-7) var(--sp-8); }
 }

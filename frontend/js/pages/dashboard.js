@@ -13,7 +13,7 @@ async function init() {
   mountShell("dashboard");
   const $ = (id) => document.getElementById(id);
   const me = await getMe().catch(() => ({ username: "", preferred_language: "en" }));
-  $("greeting").textContent = me.username ? `${greeting()}, ${me.username}` : t("Welcome back");
+  $("greeting").textContent = me.username ? `${greeting()}, ${String(me.username).split("@")[0]}` : t("Welcome back");
 
   let data;
   try {

@@ -1,0 +1,58 @@
+/* =====================================================================
+   CropGuard final polish: nothing scrolls sideways, everything fits phones.
+   Loaded last on every page.
+   ===================================================================== */
+
+/* never let the page itself wobble left and right (clip does not break sticky headers) */
+html, body { max-width: 100%; overflow-x: clip; }
+body { -webkit-tap-highlight-color: transparent; }
+a, button, select, summary, label, input[type="checkbox"], input[type="radio"] { touch-action: manipulation; }
+
+/* long emails, usernames, disease names and URLs wrap instead of pushing the layout wider */
+h1, h2, h3, h4, p, li, dd, td, th, label, small, .badge, .toast, .page-head > div { overflow-wrap: anywhere; }
+.page-head > div, .section-title > *, .row > *, .toolbar .field, .check-card, .panel { min-width: 0; }
+
+/* iOS Safari zooms into inputs under 16px */
+.input, .select, textarea, .lang-switch select { font-size: max(1rem, 16px); }
+
+/* ---------- phones ---------- */
+@media (max-width: 47.99rem) {
+  .app-main { padding-inline: 1rem; }
+  .page-head { margin-bottom: var(--sp-5); }
+  .page-head h1 { font-size: clamp(1.6rem, 7vw, 2.1rem); }
+  .page-head .btn { width: 100%; }
+
+  /* history filters: two tidy columns, count under them */
+  .toolbar { display: grid; grid-template-columns: 1fr 1fr; gap: var(--sp-3); align-items: end; }
+  .toolbar .field { min-width: 0; }
+  .toolbar .select { width: 100%; }
+  .toolbar-count { grid-column: 1 / -1; margin: 0; }
+
+  .check-grid { grid-template-columns: 1fr; }
+  .stepper { gap: var(--sp-3); }
+  .stepper li { overflow-wrap: normal; word-break: normal; font-size: 0.82rem; gap: 0.35rem; min-width: 0; }
+  dialog.modal { width: calc(100vw - 1rem); max-height: calc(100dvh - 1rem); }
+  .modal-head, .modal-body, .modal-foot { padding-inline: var(--sp-4); }
+  .modal-foot .btn { flex: 1 1 8rem; }
+}
+
+/* ---------- small phones (320 to 390 px) ---------- */
+@media (max-width: 24rem) {
+  .topbar, .site-header .container { gap: var(--sp-2); }
+  .topbar { padding-inline: 0.75rem; }
+  .topbar .brand, .site-header .brand { font-size: 1.1rem; gap: 0.4rem; min-width: 0; }
+  .topbar .brand svg, .site-header .brand svg { width: 1.5rem; height: 1.5rem; }
+  .topbar-tools, .header-tools { gap: var(--sp-2); min-width: 0; }
+  .lang-switch select { max-width: 5.6rem; }
+  .app-main { padding-inline: 0.85rem; }
+  .container { width: min(100% - 1.7rem, var(--container)); }
+  .stepper li { font-size: 0; gap: 0; justify-content: center; min-width: 0; }
+  .stepper li span { font-size: var(--fs-xs); }
+  .panel-pad { padding: var(--sp-4); }
+}
+
+/* ---------- tablets: leave room for the tab bar and respect notches ---------- */
+@media (max-width: 61.99rem) {
+  .app-main { padding-bottom: calc(var(--tabbar-h) + env(safe-area-inset-bottom, 0px) + var(--sp-6)); }
+  .topbar { padding-top: env(safe-area-inset-top, 0px); height: calc(var(--topbar-h) + env(safe-area-inset-top, 0px)); }
+}
