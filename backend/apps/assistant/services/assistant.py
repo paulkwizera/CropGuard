@@ -4,9 +4,7 @@ CropGuard Assistant: a farming question-and-answer chat powered by Gemini.
 The conversation is kept by the browser and sent with every request, so the server stores nothing
 about what farmers ask. The SDK is imported lazily so the app boots without it.
 """
-from django.conf import settings
-
-from apps.core.exceptions import ExternalServiceError
+from apps.core import gemini
 
 LANGUAGE_NAMES = {"rw": "Kinyarwanda", "en": "English", "fr": "French"}
 MAX_HISTORY = 12  # most recent messages sent to the model
@@ -59,23 +57,7 @@ def build_contents(messages: list[dict]):
 
 
 def chat(messages: list[dict], language: str = "rw", context: dict | None = None) -> str:
-    if not settings.GOOGLE_API_KEY:
-        raise ExternalServiceError("GOOGLE_API_KEY is not configured.")
-    try:
-        from google import genai
-        from google.genai import types
-
-        client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-        response = client.models.generate_content(
-            model=settings.GEMINI_MODEL,
-            contents=build_contents(messages),
-            config=types.GenerateContentConfig(
-                system_instruction=system_prompt(language, context), temperature=0.5, max_output_tokens=4096,
-            ),
-        )
-        text = (response.text or "").strip()
-    except Exception as exc:  # SDK raises many types; surface one clean error
-        raise ExternalServiceError("The AI advisor failed to respond.") from exc
-    if not text:
-        raise ExternalServiceError("The AI advisor could not answer that. Please rephrase your question.")
-    return text
+    """Answer a farmer's question. Failures are classified and logged by apps.core.gemini (clear message, no guessing)."""
+    return gemini.generate(
+        build_contents(messages), system=system_prompt(language, context), max_tokens=2048, label="assistant",
+    )

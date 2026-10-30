@@ -2,26 +2,39 @@
 import io
 import json
 import re
+import time
 
 from django.conf import settings
 
+from apps.core import gemini
 from apps.core.exceptions import ExternalServiceError
 from apps.detection import crops
 
 LANGUAGE_NAMES = {"rw": "Kinyarwanda", "en": "English", "fr": "French"}
 
 
-def _generate(prompt: str) -> str:
-    if not settings.GOOGLE_API_KEY:
-        raise ExternalServiceError("GOOGLE_API_KEY is not configured.")
-    try:
-        from google import genai
+def _generate(prompt: str, label: str = "advice") -> str:
+    """Plain text answer. All the work (retries, fallback models, error messages, logging) lives in apps.core.gemini."""
+    return gemini.generate(prompt, max_tokens=1500, label=label)
 
-        client = genai.Client(api_key=settings.GOOGLE_API_KEY)
-        response = client.models.generate_content(model=settings.GEMINI_MODEL, contents=prompt)
-        return (response.text or "").strip()
-    except Exception as exc:  # SDK raises many types; surface one clean error
-        raise ExternalServiceError("The AI advisor failed to respond.") from exc
+
+# Treatment advice for a disease is the same for every farmer who asks in the same language, so a repeat is answered
+# instantly from memory (and does not use up Gemini quota). Weather advice is kept for 30 minutes per place.
+_CACHE: dict = {}
+_ADVICE_TTL = 24 * 3600
+_WEATHER_TTL = 30 * 60
+
+
+def _cached(key, ttl, make):
+    now = time.time()
+    hit = _CACHE.get(key)
+    if hit and now - hit[0] < ttl:
+        return hit[1]
+    value = make()
+    if len(_CACHE) > 300:   # keep memory small on a 512 MB server
+        _CACHE.clear()
+    _CACHE[key] = (now, value)
+    return value
 
 
 def weather_advisory(city: str, summary: dict, language: str = "rw") -> str:
@@ -37,7 +50,8 @@ Instructions:
 2. Say clearly whether the farmer should irrigate, spray pesticides, harvest early, or protect soil from erosion.
 3. Write the entire answer in {LANGUAGE_NAMES.get(language, 'English')}. Keep it encouraging, practical and short.
 """
-    return _generate(prompt)
+    key = ("weather", city.strip().lower(), language, round(summary.get("total_rain_mm") or 0))
+    return _cached(key, _WEATHER_TTL, lambda: _generate(prompt, "weather advice"))
 
 
 def disease_advice(disease: str, language: str = "rw", crop: str = "maize") -> str:
@@ -51,7 +65,7 @@ If a pesticide is mentioned, tell the farmer to follow the product label and ask
 agronomist or agro-dealer for the right product and dose; do not invent exact doses.
 Write the entire answer in {LANGUAGE_NAMES.get(language, 'English')}. Keep it under 200 words.
 """
-    return _generate(prompt)
+    return _cached(("disease", crop, disease, language), _ADVICE_TTL, lambda: _generate(prompt, "treatment advice"))
 
 
 # --------------------------------------------------------------------------------------
@@ -69,28 +83,17 @@ def _image_for_gemini(image_path) -> bytes:
 
     with Image.open(image_path) as im:
         im = ImageOps.exif_transpose(im).convert("RGB")
-        im.thumbnail((1024, 1024))
+        im.thumbnail((768, 768))
         buf = io.BytesIO()
-        im.save(buf, "JPEG", quality=85)
+        im.save(buf, "JPEG", quality=80)
     return buf.getvalue()
 
 
 def _generate_with_image(prompt: str, image_bytes: bytes) -> str:
-    if not settings.GOOGLE_API_KEY:
-        raise ExternalServiceError("GOOGLE_API_KEY is not configured.")
-    try:
-        from google import genai
-        from google.genai import types
+    from google.genai import types
 
-        client = genai.Client(api_key=settings.GOOGLE_API_KEY, http_options={"timeout": 45_000})
-        response = client.models.generate_content(
-            model=settings.GEMINI_MODEL,
-            contents=[types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"), prompt],
-            config=types.GenerateContentConfig(response_mime_type="application/json", temperature=0.2),
-        )
-        return (response.text or "").strip()
-    except Exception as exc:
-        raise ExternalServiceError("The AI second opinion failed to respond.") from exc
+    contents = [types.Part.from_bytes(data=image_bytes, mime_type="image/jpeg"), prompt]
+    return gemini.generate(contents, json_output=True, max_tokens=1024, label="second opinion")
 
 
 def _parse_json(text: str) -> dict:
@@ -201,5 +204,9 @@ def judge(facts: dict, answer: dict, language: str = "rw") -> dict:
 
 def verify_detection(image_path, facts: dict, language: str = "rw") -> dict:
     """Second opinion on one check. `facts` = {crop, status, top_label, top_confidence} from the detector."""
-    answer = _parse_json(_generate_with_image(build_verify_prompt(facts, language), _image_for_gemini(image_path)))
+    try:
+        image = _image_for_gemini(image_path)
+    except (OSError, ValueError) as exc:  # e.g. Render wiped its disk since the upload: say so instead of a server error
+        raise ExternalServiceError("This photo is no longer stored on the server, so it cannot be double-checked. Please upload it again.", code="photo_missing") from exc
+    answer = _parse_json(_generate_with_image(build_verify_prompt(facts, language), image))
     return judge(facts, answer, language)
