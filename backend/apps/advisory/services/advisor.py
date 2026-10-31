@@ -141,6 +141,9 @@ Reply with ONLY a JSON object with exactly these keys:
   or "" if you do not know. Otherwise "".
 - "condition": for a maize or cassava leaf, exactly one name from the list above for that crop,
   or "{OTHER_PROBLEM}" (a real problem that is not in the list), or "{CANNOT_TELL}". Otherwise "{CANNOT_TELL}".
+- "problem_name": only when "condition" is "{OTHER_PROBLEM}": the common English name of the leaf disease or problem you
+  think this is, 2 to 5 words (for example "Gray leaf spot" or "Nitrogen deficiency"), or "" if you are not sure what
+  it is. Otherwise "".
 - "certainty": one of "high", "medium", "low" (how sure YOU are from this photo; use "low" if it is blurry,
   far away, badly lit or you are guessing)
 - "explanation": one or two short, plain sentences saying what you see on the leaf and why, written in
@@ -152,6 +155,15 @@ def _plant_name(value) -> str:
     """Gemini's free-text plant name, reduced to a few harmless lowercase words (it is shown to the farmer)."""
     name = re.sub(r"[^a-z' -]", "", str(value or "").lower())
     return " ".join(name.replace("'", "").split()).strip(" -")[:40]
+
+
+def _problem_name(value) -> str:
+    """Gemini's free-text disease name, reduced to a few harmless words (it is shown to the farmer and sent to the advisor)."""
+    name = re.sub(r"[^A-Za-z0-9' ()-]", "", str(value or ""))
+    name = " ".join(name.split()).strip(" -")[:60]
+    if name.lower() in {"", "unknown", "none", "n/a", "other", "other problem", "cannot tell", "not sure"}:
+        return ""
+    return name[0].upper() + name[1:]
 
 
 def agrees(facts: dict, crop: str, condition: str) -> bool:
@@ -181,6 +193,10 @@ def judge(facts: dict, answer: dict, language: str = "rw") -> dict:
         condition = CANNOT_TELL
     explanation = " ".join(str(answer.get("explanation") or "").split())[:500]
     plant_name = _plant_name(answer.get("plant_name")) if crop == "other_plant" else ""
+    known_names = {n.lower() for c in known_crops for n in crops.condition_names(c)}
+    problem_name = _problem_name(answer.get("problem_name")) if condition == OTHER_PROBLEM else ""
+    if problem_name.lower() in known_names:   # it is one of the diseases the app already knows: not a new one
+        problem_name = ""
 
     if crop == "unclear" or certainty == "low" or (crop in known_crops and condition == CANNOT_TELL):
         verdict = "unsure"
@@ -197,6 +213,7 @@ def judge(facts: dict, answer: dict, language: str = "rw") -> dict:
         "certainty": certainty,
         "explanation": explanation,
         "plant_name": plant_name,
+        "problem_name": problem_name,
         "language": language,
         "model": settings.GEMINI_MODEL,
     }

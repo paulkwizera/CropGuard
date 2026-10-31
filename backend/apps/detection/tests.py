@@ -293,6 +293,21 @@ class SecondOpinionTests(SimpleTestCase):
         v = self.judge(self.MSV, crop="cassava", condition="Maize Leaf Blight")  # not a cassava condition
         self.assertEqual((v["condition"], v["verdict"]), ("Cannot tell", "unsure"))
 
+    def test_a_disease_name_from_gemini_is_kept_only_for_another_problem_and_made_harmless(self):
+        v = self.judge(self.MSV, crop="maize", condition="Other problem", problem_name="  gray leaf <b>spot</b>; DROP TABLE  ")
+        self.assertEqual((v["verdict"], v["problem_name"]), ("disagree", "Gray leaf bspotb DROP TABLE"))
+        self.assertEqual(self.judge(self.MSV, crop="maize", condition="Maize Leaf Blight", problem_name="Gray leaf spot")["problem_name"], "")
+        self.assertEqual(self.judge(self.MSV, crop="maize", condition="Other problem", problem_name="x" * 90)["problem_name"], "X" + "x" * 59)
+
+    def test_useless_or_already_known_names_are_dropped(self):
+        for name in ("", "unknown", "Other problem", "Cannot tell", "Maize Leaf Blight", None):
+            self.assertEqual(self.judge(self.MSV, crop="maize", condition="Other problem", problem_name=name)["problem_name"], "", name)
+
+    def test_the_prompt_asks_gemini_to_name_a_problem_the_app_does_not_know(self):
+        from apps.advisory.services import advisor
+
+        self.assertIn('"problem_name"', advisor.build_verify_prompt(self.MSV, "en"))
+
     def test_json_parsing_accepts_fences_and_lists_and_rejects_junk(self):
         from apps.advisory.services import advisor
 
@@ -401,9 +416,24 @@ class DecisionTests(SimpleTestCase):
         out = self.decide(self.detector("cassava", "Cassava Bacterial Blight", 0.6), self.gemini("cassava", "Healthy cassava leaf"))
         self.assertEqual((out["final"]["status"], out["final"]["top_label"]), ("healthy", "Healthy cassava leaf"))
 
-    def test_another_problem_gemini_cannot_name_never_replaces_the_detector(self):
+    def test_another_problem_gemini_cannot_name_replaces_a_weak_detection_only_when_gemini_is_highly_certain(self):
         out = self.decide(self.detector("cassava", "Cassava Green Mottle", 0.55), self.gemini("cassava", "Other problem"))
-        self.assertEqual((out["final"]["top_label"], out["resolution"]["winner"]), ("Cassava Green Mottle", "detector"))
+        self.assertEqual((out["final"]["status"], out["final"]["top_label"], out["final"]["top_confidence"]), ("disease", "Other leaf problem (not Cassava Green Mottle)", None))
+        self.assertEqual((out["resolution"]["winner"], out["resolution"]["basis"]), ("gemini", "gemini_more_certain"))
+        self.assertEqual(out["resolution"]["detector"]["top_label"], "Cassava Green Mottle")  # what was set aside is still shown
+
+    def test_the_disease_name_gemini_suggests_becomes_the_answer(self):
+        g = {**self.gemini("maize", "Other problem"), "problem_name": "Gray leaf spot"}
+        out = self.decide(self.detector("maize", "Maize Streak Virus", 0.55), g)
+        self.assertEqual((out["final"]["status"], out["final"]["top_label"], out["final"]["top_confidence"]), ("disease", "Gray leaf spot", None))
+        self.assertEqual((out["resolution"]["winner"], out["resolution"]["basis"]), ("gemini", "gemini_more_certain"))
+        self.assertEqual(out["resolution"]["detector"]["top_label"], "Maize Streak Virus")
+
+    def test_another_problem_never_replaces_a_detector_that_is_sure_or_a_gemini_that_is_not(self):
+        sure = self.decide(self.detector("cassava", "Cassava Green Mottle", 0.9), self.gemini("cassava", "Other problem"))
+        self.assertEqual((sure["final"]["top_label"], sure["resolution"]["basis"]), ("Cassava Green Mottle", "detector_more_certain"))
+        medium = self.decide(self.detector("cassava", "Cassava Green Mottle", 0.55), self.gemini("cassava", "Other problem", "medium"))
+        self.assertEqual((medium["final"]["top_label"], medium["resolution"]["basis"]), ("Cassava Green Mottle", "unconfirmed"))
 
     def test_gemini_always_intervenes_when_the_leaf_is_not_maize_or_cassava(self):
         for certainty in ("high", "medium"):

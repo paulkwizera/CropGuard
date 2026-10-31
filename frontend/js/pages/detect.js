@@ -112,6 +112,12 @@ function init() {
       $("retry-btn").focus();
     }
   }
+  // api.js retries quietly while Render wakes the sleeping server: tell the farmer instead of showing a red error
+  window.addEventListener("cropguard:waking", () => {
+    if ($("stage-busy").hidden) return;
+    $("busy-title").textContent = "Waking up the server, this can take up to a minute…";
+    $("progress").classList.add("is-indeterminate");
+  });
   $("analyze-btn").addEventListener("click", analyze);
   $("retry-btn").addEventListener("click", analyze);
 
@@ -203,7 +209,11 @@ function init() {
       $("verify-retry").addEventListener("click", retryVerify);
       return;
     }
-    const meta = BASIS[r.basis] || BASIS.unconfirmed;
+    // Gemini read the leaf differently but was not sure enough to replace the detector: say it plainly, not just "could not confirm"
+    const disagrees = r.basis === "unconfirmed" && v.verdict === "disagree";
+    const meta = disagrees
+      ? { badge: "badge--warn", icon: "info", title: "Gemini disagrees with the detector", detail: "Gemini reads this leaf differently but was not certain enough to replace the detector's answer. Treat this result with care and check a few more leaves." }
+      : (BASIS[r.basis] || BASIS.unconfirmed);
     const was = r.detector || {};
     const cropLine = r.crop_changed
       ? (d.crop === "cassava"
@@ -213,8 +223,8 @@ function init() {
     // the answer that did NOT win, so the farmer can see what was set aside
     const other = r.basis === "gemini_more_certain" && was.top_label
         ? `<p class="verify-sees"><strong>The detector said:</strong> <span>${escapeHtml(was.top_label)}</span> <span class="faint">${percent(was.top_confidence)}</span></p>`
-      : r.basis === "detector_more_certain" && v.condition && v.condition !== "Cannot tell"
-        ? `<p class="verify-sees"><strong>Gemini suggested:</strong> <span>${escapeHtml(v.condition)}</span></p>`
+      : (r.basis === "detector_more_certain" || disagrees) && v.condition && v.condition !== "Cannot tell"
+        ? `<p class="verify-sees"><strong>Gemini suggested:</strong> <span>${escapeHtml(v.problem_name || v.condition)}</span></p>`
       : "";
     box.innerHTML = `<h3>Second opinion</h3>
       <span class="badge ${meta.badge}">${icon(meta.icon, "icon--sm")}${meta.title}</span>

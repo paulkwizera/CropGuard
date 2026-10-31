@@ -8,6 +8,14 @@ import { mock } from "./mock.js";
 // opens means it is usually awake by the time the farmer logs in or picks a photo.
 if (!IS_LOCAL && !CONFIG.USE_MOCK) fetch(`${CONFIG.API_BASE}/health/`).catch(() => {});
 
+// While Render wakes the sleeping server, the first calls fail: the browser sees "no connection" (the wake-up page has no
+// CORS headers) or a 502/503/504 page that is not our JSON. Those are retried quietly (the page shows "waking up the
+// server") instead of showing a red error. A real answer from the app, even an error like 502 from Gemini, is never retried.
+const WAKE_WAITS = IS_LOCAL ? [] : [3000, 6000, 10000, 15000];
+const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const isWaking = (status, body) => status === 0 || ([502, 503, 504].includes(status) && !body);
+const announceWaking = () => window.dispatchEvent(new CustomEvent("cropguard:waking"));
+
 export class ApiError extends Error {
   constructor(message, status, details) { super(message); this.status = status; this.details = details; }
 }
@@ -47,7 +55,7 @@ function expireSession() {
   window.location.href = "login.html?expired=1";
 }
 
-async function request(path, { method = "GET", json, form, auth = true, retry = true } = {}) {
+async function request(path, { method = "GET", json, form, auth = true, retry = true, attempt = 0 } = {}) {
   const headers = {};
   if (json) headers["Content-Type"] = "application/json";
   if (auth && getTokens()?.access) headers.Authorization = `Bearer ${getTokens().access}`;
@@ -56,38 +64,45 @@ async function request(path, { method = "GET", json, form, auth = true, retry = 
   try {
     res = await fetch(`${CONFIG.API_BASE}${path}`, { method, headers, body: form ?? (json ? JSON.stringify(json) : undefined) });
   } catch {
+    if (attempt < WAKE_WAITS.length) { announceWaking(); await wait(WAKE_WAITS[attempt]); return request(path, { method, json, form, auth, retry, attempt: attempt + 1 }); }
     throw new ApiError(FRIENDLY[0], 0);
   }
 
   if (res.status === 401 && auth) {
-    if (retry && (await refreshAccess())) return request(path, { method, json, form, auth, retry: false });
+    if (retry && (await refreshAccess())) return request(path, { method, json, form, auth, retry: false, attempt });
     expireSession();
     throw new ApiError("Your session has ended. Please sign in again.", 401);
   }
   if (res.status === 204) return null;
 
   const body = await res.json().catch(() => null);
+  if (!res.ok && isWaking(res.status, body) && attempt < WAKE_WAITS.length) {
+    announceWaking(); await wait(WAKE_WAITS[attempt]);
+    return request(path, { method, json, form, auth, retry, attempt: attempt + 1 });
+  }
   if (!res.ok) throw new ApiError(readableError(body, res.status), res.status, body);
   return body;
 }
 
 /** Multipart upload with real progress events (fetch cannot report upload progress). */
-function upload(path, form, onProgress, retry = true) {
+function upload(path, form, onProgress, retry = true, attempt = 0) {
   return new Promise((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${CONFIG.API_BASE}${path}`);
     const token = getTokens()?.access;
     if (token) xhr.setRequestHeader("Authorization", `Bearer ${token}`);
     xhr.upload.onprogress = (e) => { if (e.lengthComputable) onProgress?.(e.loaded / e.total); };
-    xhr.onerror = xhr.ontimeout = () => reject(new ApiError(FRIENDLY[0], 0));
+    const again = async () => { announceWaking(); await wait(WAKE_WAITS[attempt]); resolve(upload(path, form, onProgress, retry, attempt + 1)); };
+    xhr.onerror = xhr.ontimeout = () => (attempt < WAKE_WAITS.length ? again() : reject(new ApiError(FRIENDLY[0], 0)));
     xhr.onload = async () => {
       if (xhr.status === 401) {
-        if (retry && (await refreshAccess())) return resolve(upload(path, form, onProgress, false));
+        if (retry && (await refreshAccess())) return resolve(upload(path, form, onProgress, false, attempt));
         expireSession();
         return reject(new ApiError("Your session has ended. Please sign in again.", 401));
       }
       let body = null;
       try { body = JSON.parse(xhr.responseText); } catch { /* non-JSON error page */ }
+      if (isWaking(xhr.status, body) && attempt < WAKE_WAITS.length) return again();
       if (xhr.status >= 200 && xhr.status < 300) resolve(body);
       else reject(new ApiError(readableError(body, xhr.status), xhr.status, body));
     };

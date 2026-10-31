@@ -115,6 +115,11 @@ class DetectionViewSet(
             return Response({"detail": "Nothing was detected in this image."}, status=status.HTTP_400_BAD_REQUEST)
         body = AdviceRequestSerializer(data=request.data)
         body.is_valid(raise_exception=True)
-        detection.advice = advisor.disease_advice(detection.top_label, body.validated_data["language"], crop=detection.crop)
+        disease = detection.top_label
+        seen = detection.verification or {}
+        gemini_named_it = seen.get("condition") == advisor.OTHER_PROBLEM and (seen.get("resolution") or {}).get("winner") == "gemini"
+        if gemini_named_it and seen.get("explanation"):  # the detector never knew this problem: give the AI what Gemini saw
+            disease = f"{disease}. What a close look at the photo showed: {seen['explanation'][:300]}"
+        detection.advice = advisor.disease_advice(disease, body.validated_data["language"], crop=detection.crop)
         detection.save(update_fields=["advice"])
         return Response(self.get_serializer(detection).data)

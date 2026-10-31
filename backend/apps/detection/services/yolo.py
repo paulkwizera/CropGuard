@@ -5,6 +5,7 @@ Each model is loaded once, on first use, so Django starts fast and `manage.py ch
 work even if ultralytics/torch is not installed.
 """
 import gc
+import logging
 import threading
 from functools import lru_cache
 
@@ -14,11 +15,14 @@ from apps.core.exceptions import ServiceUnavailable
 
 from .. import crops
 
+log = logging.getLogger("cropguard.yolo")
+
 
 # Only ONE photo goes through PyTorch at a time. Each running inference needs tens of MB of working memory, so with
 # 4 server threads and 4 farmers at once a 512 MB free instance runs out and Render restarts it. The CPU is the
 # bottleneck anyway, so waiting in line is no slower. (Gemini calls are not behind this lock: they only wait on the network.)
 _inference_lock = threading.Lock()
+_load_lock = threading.Lock()   # two threads must never load the same model at once (that would double the memory)
 
 
 @lru_cache(maxsize=4)
@@ -34,7 +38,8 @@ def get_model(crop: str):
     if not crops.is_available(crop):
         name = settings.CROP_MODELS.get(crop, {}).get("name", crop)
         raise ServiceUnavailable(f"The {name.lower()} detector is not available yet.")
-    return _load_model(str(crops.model_path(crop)))
+    with _load_lock:
+        return _load_model(str(crops.model_path(crop)))
 
 
 # In auto mode every detector is run at this low floor so their confidences can be compared;
@@ -91,3 +96,25 @@ def predict_auto(image_path, conf: float | None = None) -> dict:
     chosen["crop"] = best
     chosen["scores"] = scores
     return chosen
+
+
+def warm_up() -> None:
+    """Load every detector and push one tiny blank image through it, in the background right after the server starts.
+
+    Importing PyTorch and loading the models takes 20+ seconds on a free server. Doing it here means the first farmer's
+    photo does not have to wait for it (it used to fail with a red error on the first try and work on the second).
+    Never raises: a failure here only means the first photo pays the cost, as before.
+    """
+    try:
+        import numpy as np
+
+        for crop in crops.crop_ids():
+            if not crops.is_available(crop):
+                continue
+            model = get_model(crop)
+            with _inference_lock:
+                model.predict(source=np.zeros((64, 64, 3), dtype=np.uint8), imgsz=settings.YOLO_IMGSZ, verbose=False)
+                gc.collect()
+        log.info("detectors warmed up")
+    except Exception:
+        log.warning("detector warm-up failed; the first photo will load them instead", exc_info=True)

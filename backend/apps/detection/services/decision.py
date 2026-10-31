@@ -11,6 +11,9 @@ Who is trusted for what:
   * NOT A MAIZE/CASSAVA LEAF (another plant, or no leaf at all): Gemini always intervenes, once it is at least
     moderately sure. The detectors cannot say "not my crop", so whatever they answered about such a photo is meaningless.
     (A "low" certainty answer never gets this far: it is treated as "unsure".)
+  * A real problem the app has no name for ("Other problem"): if Gemini is highly certain and the detector is not,
+    the answer becomes the disease name Gemini suggests (or "Other leaf problem (not <what the detector said>)" when
+    it has no name): better than headlining a disease Gemini has just ruled out. Otherwise the detector's answer stays.
   * For disease questions, an answer Gemini is only moderately sure about never overrules the detector.
 """
 from django.conf import settings
@@ -42,6 +45,7 @@ def _answer(crop: str, results: list[dict]) -> dict:
 
 NOT_SUPPORTED_LABEL = "Not a maize or cassava leaf"
 NO_LEAF_LABEL = "No leaf found in the photo"
+OTHER_PROBLEM_LABEL = "Other leaf problem"
 
 
 def _from_gemini(gemini: dict) -> dict:
@@ -97,8 +101,15 @@ def decide(detector: dict, gemini: dict, rerun) -> dict:
                 return result("detector", "confirmed", current, crop_changed)
 
     detector_is_sure = current["status"] != "none" and (current["top_confidence"] or 0) >= trust
-    if gemini["condition"] == advisor.OTHER_PROBLEM:  # a problem the app cannot name: nothing to switch to
-        return result("detector", "detector_more_certain" if detector_is_sure else "unconfirmed", current, crop_changed)
+    if gemini["condition"] == advisor.OTHER_PROBLEM:  # a real problem, but one the app has no name for
+        if detector_is_sure:
+            return result("detector", "detector_more_certain", current, crop_changed)
+        if gemini["certainty"] == "high":  # do not headline a disease that Gemini has just ruled out
+            ruled_out = current["top_label"] if current["status"] == "disease" else ""
+            label = gemini.get("problem_name") or (f"{OTHER_PROBLEM_LABEL} (not {ruled_out})" if ruled_out else OTHER_PROBLEM_LABEL)
+            final = {"crop": gemini["crop"], "status": "disease", "top_label": label, "top_confidence": None, "results": []}
+            return result("gemini", "gemini_more_certain", final, crop_changed or gemini["crop"] != detector["crop"])
+        return result("detector", "unconfirmed", current, crop_changed)
     if gemini["certainty"] == "high" and not detector_is_sure:
         return result("gemini", "gemini_more_certain", _from_gemini(gemini), crop_changed or gemini["crop"] != detector["crop"])
     return result("detector", "detector_more_certain" if detector_is_sure else "unconfirmed", current, crop_changed)
