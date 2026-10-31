@@ -8,7 +8,7 @@ from apps.accounts.models import User
 from apps.core.exceptions import ExternalServiceError
 
 from .services import assistant
-from .views import ChatView
+from .views import ChatStreamView, ChatView
 
 
 class PromptTests(SimpleTestCase):
@@ -82,3 +82,40 @@ class ChatEndpointTests(SimpleTestCase):
         self.assertEqual(r.data, {"reply": "Use certified seed.", "language": "fr"})
         self.assertEqual(chat.call_args.args[1], "fr")
         self.assertEqual(chat.call_args.args[2], {"district": "Huye"})
+
+
+def read_events(response):
+    """The (name, data) pairs of a streamed answer, in order."""
+    import json
+
+    text = b"".join(response.streaming_content).decode()
+    return [(b.split("\n")[0][7:], json.loads(b.split("\n")[1][6:])) for b in text.split("\n\n") if b.startswith("event:")]
+
+
+@override_settings(GOOGLE_API_KEY="test-key")
+class ChatStreamEndpointTests(SimpleTestCase):
+    def call(self, payload, authed=True):
+        request = APIRequestFactory().post("/api/assistant/chat/stream/", payload, format="json")
+        if authed:
+            force_authenticate(request, user=User(id=ObjectId(), username="farmer"))
+        return ChatStreamView.as_view()(request)
+
+    def test_requires_login_and_validates_before_streaming(self):
+        ok = {"messages": [{"role": "user", "content": "hi"}]}
+        self.assertEqual(self.call(ok, authed=False).status_code, 401)
+        self.assertEqual(self.call({"messages": []}).status_code, 400)   # a normal JSON error, not a stream
+
+    @patch("google.genai.Client")
+    def test_the_answer_arrives_piece_by_piece_then_done(self, client):
+        client.return_value.models.generate_content_stream.return_value = iter([MagicMock(text="Plant "), MagicMock(text="early.")])
+        r = self.call({"messages": [{"role": "user", "content": "When do I plant?"}], "language": "en"})
+        self.assertEqual(r.status_code, 200)
+        self.assertIn("text/event-stream", r["Content-Type"])
+        self.assertEqual(read_events(r), [("chunk", {"t": "Plant "}), ("chunk", {"t": "early."}), ("done", {"text": "Plant early."})])
+
+    @patch("google.genai.Client")
+    def test_a_failure_is_an_error_event_with_a_friendly_message(self, client):
+        client.return_value.models.generate_content_stream.side_effect = RuntimeError("boom")
+        events = read_events(self.call({"messages": [{"role": "user", "content": "hi"}], "language": "en"}))
+        self.assertEqual(events[-1][0], "error")
+        self.assertNotIn("boom", str(events))

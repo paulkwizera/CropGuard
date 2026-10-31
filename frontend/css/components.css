@@ -208,3 +208,37 @@ th { font-size: var(--fs-xs); font-weight: 700; color: var(--ink-soft); backgrou
   .lang-switch { padding-left: 0.65rem; }
   .topbar .badge--demo { display: none; }
 }
+
+/* ---- live "what is the AI doing" list, and the blinking cursor while an answer is being written ---- */
+ol.activity, .prose-ai ol.activity { list-style: none; margin: var(--sp-3) 0 0; padding: 0; display: grid; gap: 0.4rem; font-size: var(--fs-sm); color: var(--ink-soft); }
+.prose-ai ol.activity { margin-bottom: var(--sp-2); }
+ol.activity[hidden] { display: none; }
+.activity__line { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.15rem 0.6rem; margin: 0; animation: toast-in var(--t-med) var(--ease); }
+.activity__mark { position: relative; flex: none; width: 1.15rem; height: 1.15rem; align-self: center; display: grid; place-items: center; font-size: 0.8125rem; line-height: 1; }
+/* three small dots circling each other while a step is running; a tick when it is done */
+.activity__mark i { position: absolute; top: 50%; left: 50%; width: 0.3rem; height: 0.3rem; margin: -0.15rem 0 0 -0.15rem; border-radius: 50%; display: none; }
+.activity__line.is-running .activity__mark { animation: orbit 1.3s linear infinite; }
+.activity__line.is-running .activity__mark i { display: block; animation: orbit-pulse 1.3s ease-in-out infinite; }
+.activity__mark i:nth-child(1) { transform: rotate(0deg) translateY(-0.38rem); background: var(--leaf-600); }
+.activity__mark i:nth-child(2) { transform: rotate(120deg) translateY(-0.38rem); background: var(--leaf-500); animation-delay: -0.43s; }
+.activity__mark i:nth-child(3) { transform: rotate(240deg) translateY(-0.38rem); background: var(--kernel); animation-delay: -0.87s; }
+.activity__line.is-done .activity__mark::before { content: "\2713"; color: var(--leaf-600); font-weight: 700; }
+@keyframes orbit { to { transform: rotate(360deg); } }
+@keyframes orbit-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.45; } }
+.activity__line.is-running .activity__title { color: var(--ink); font-weight: 600; }
+.activity__line.is-done .activity__title { color: var(--ink-faint); }
+.activity__hint { color: var(--ink-faint); font-style: italic; min-width: 0; }
+.activity__time { margin-left: auto; color: var(--ink-faint); font-variant-numeric: tabular-nums; font-size: var(--fs-xs); }
+
+.advice-out.is-streaming > :last-child:not(ul):not(ol)::after,
+.advice-out.is-streaming > :is(ul, ol):last-child > li:last-child::after,
+.msg--live.is-streaming .live-text > :last-child:not(ul):not(ol)::after,
+.msg--live.is-streaming .live-text > :is(ul, ol):last-child > li:last-child::after {
+  content: ""; display: inline-block; width: 0.5ch; height: 1.05em; margin-left: 2px; vertical-align: text-bottom;
+  background: var(--leaf-600); animation: caret 1s steps(1) infinite;
+}
+@keyframes caret { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .activity__line.is-running .activity__mark, .activity__line.is-running .activity__mark i { animation: none; }
+  .advice-out.is-streaming > :last-child::after, .msg--live .live-text *::after { animation: none !important; }
+}

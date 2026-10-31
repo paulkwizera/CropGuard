@@ -103,6 +103,16 @@ export const mock = {
     await wait(900);
     return { city, language, weather, advisory: `(mock, ${language}) Some rain is expected today, so you can skip irrigation. Do not spray pesticides before the rain.` };
   },
+  async assistantStream(messages, language, context, onChunk) {
+    const { reply } = await mock.assistantChat(messages, language);
+    for (const word of reply.split(/(?<= )/)) { onChunk(word); await wait(25); }
+    return reply;
+  },
+  async adviceStream(id, language, onChunk) {
+    const { advice } = await mock.detectionAdvice(id, language);
+    for (const word of advice.split(/(?<= )/)) { onChunk(word); await wait(25); }
+    return advice;
+  },
   async assistantChat(messages, language) {
     await wait(1100);
     const q = (messages.at(-1)?.content || "").toLowerCase();

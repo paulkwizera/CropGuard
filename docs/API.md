@@ -85,6 +85,20 @@ Current user's detections, newest first.
 
 ### `POST /detections/{id}/advice/`
 `{ "language": "rw" }` (`rw` | `en` | `fr`) → **200** detection object with `advice` filled in.
+
+### `POST /detections/{id}/advice/stream/`
+Same body as `advice/`. Streams the advice (see below); the full text is saved on the detection when it ends.
+
+**Streamed variant** (the page uses this so the answer appears while it is being written): same request body, answered as
+Server-Sent Events (`text/event-stream`) instead of one JSON body:
+
+```
+event: chunk   data: {"t": "some new words"}                      (many times)
+event: done    data: {"text": "the whole answer"}                 (once, at the end)
+event: error   data: {"detail": "...", "code": "gemini_busy"}     (instead of done, if the AI failed)
+```
+Problems with the request itself (400 bad input, 401 not signed in, 429 too many requests) are normal JSON errors sent
+before the stream starts. If streaming is unavailable, the page falls back to the non-streamed endpoint.
 **400** unless `status` is `disease`.
 
 ---
@@ -130,6 +144,10 @@ The browser keeps the conversation and sends it each time; the server stores not
 ---
 
 ## Health
+
+
+### `POST /assistant/chat/stream/`
+Same body as `chat/`; streamed as events (same format as `advice/stream/`).
 
 ### `GET /health/` (no auth)
 `{ "status": "ok", "mongodb": "ok" }`

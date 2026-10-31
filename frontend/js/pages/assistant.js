@@ -8,6 +8,8 @@ import { toast } from "../components/toast.js";
 import { cropName, hasIssue } from "../components/checks.js";
 import { getMe } from "../session.js";
 import { adviceLang, t } from "../i18n.js";
+import { createActivity } from "../components/activity.js";
+import { partialHtml, smoothWriter } from "../components/stream.js";
 
 if (requireAuth()) init();
 
@@ -68,13 +70,23 @@ async function init() {
     for (const m of messages) log.append(bubble(m.role, m.content));
     log.scrollTop = log.scrollHeight;
   }
-  function typing() {
+  // The assistant's reply while it is being written: a short "what is happening" list first, then the words appearing.
+  function liveBubble() {
     const el = document.createElement("div");
-    el.className = "msg msg--assistant msg--typing";
+    el.className = "msg msg--assistant msg--live";
     el.setAttribute("aria-label", t("The assistant is writing…"));
-    el.innerHTML = `<span class="msg-avatar" aria-hidden="true">${icon("leaf", "icon--sm")}</span><div class="msg-body"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span></div>`;
+    el.innerHTML = `<span class="msg-avatar" aria-hidden="true">${icon("leaf", "icon--sm")}</span><div class="msg-body prose-ai"><ol class="activity"></ol><div class="live-text"></div></div>`;
     log.append(el); log.scrollTop = log.scrollHeight;
-    return el;
+    const activity = createActivity(el.querySelector(".activity"));
+    activity.step("Thinking…", ["Reading your question", "Thinking it through", "Writing the answer"]);
+    const text = el.querySelector(".live-text");
+    return {
+      el,
+      begin() { activity.clear(); el.classList.add("is-streaming"); },
+      show(shown) { text.innerHTML = partialHtml(shown); log.scrollTop = log.scrollHeight; },
+      end() { activity.clear(); el.classList.remove("is-streaming"); },
+      remove() { activity.clear(); el.remove(); },
+    };
   }
   function showError(message, retry) {
     const el = document.createElement("div");
@@ -88,15 +100,21 @@ async function init() {
   // ---- asking
   async function send() {
     busy = true; sendBtn.disabled = true;
-    const wait = typing();
+    const live = liveBubble();
+    const writer = smoothWriter((shown) => live.show(shown));
+    let started = false;
     try {
-      const { reply } = await api.assistantChat(messages, getLanguage(langBox), context);
+      const reply = await api.assistantStream(messages, getLanguage(langBox), context, (piece) => {
+        if (!started) { started = true; live.begin(); }
+        writer.push(piece);
+      });
+      if (!started) live.begin();   // streaming was unavailable: the whole reply arrived at once, so it is typed out
+      await writer.finish(reply);
       messages.push({ role: "assistant", content: reply });
       save();
-      wait.remove();
-      render();
+      live.end();
     } catch (err) {
-      wait.remove();
+      live.remove();
       const text = err.status === 429 ? t("You are asking very quickly. Please wait a moment and try again.") : err.message;
       showError(text, send);
     } finally {

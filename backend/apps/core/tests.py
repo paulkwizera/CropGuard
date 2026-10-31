@@ -93,3 +93,42 @@ class GeminiTests(SimpleTestCase):
         self.assertFalse(report["ok"])
         self.assertEqual(report["checks"][0]["kind"], "auth")
         self.assertNotIn("test-key", str(report))
+
+
+@override_settings(GOOGLE_API_KEY="test-key", GEMINI_MODEL="m1", GEMINI_FALLBACK_MODELS="m2", GEMINI_THINKING="low")
+@patch("apps.core.gemini.time.sleep", lambda s: None)
+@patch("google.genai.Client")
+class GeminiStreamTests(SimpleTestCase):
+    def setUp(self):
+        gemini._state.update(preferred=None, last=None)
+
+    def stream(self, client):
+        return client.return_value.models.generate_content_stream
+
+    def test_pieces_are_yielded_in_order_and_empty_ones_skipped(self, client):
+        self.stream(client).return_value = iter([reply("Hello "), reply(None), reply("farmer")])
+        self.assertEqual(list(gemini.stream("x")), ["Hello ", "farmer"])
+
+    def test_a_failure_before_the_first_word_falls_back_to_the_next_model(self, client):
+        self.stream(client).side_effect = [SDKError(404, "NOT_FOUND", "model not found"), iter([reply("fine")])]
+        self.assertEqual("".join(gemini.stream("x")), "fine")
+        self.assertEqual([c.kwargs["model"] for c in self.stream(client).call_args_list], ["m1", "m2"])
+
+    def test_a_rejected_key_stops_at_once(self, client):
+        self.stream(client).side_effect = SDKError(401, "UNAUTHENTICATED", "ACCESS_TOKEN_TYPE_UNSUPPORTED")
+        with self.assertRaises(ExternalServiceError) as ctx:
+            list(gemini.stream("x"))
+        self.assertEqual(ctx.exception.get_codes(), "gemini_auth")
+
+    def test_a_break_part_way_raises_and_does_not_restart_the_answer(self, client):
+        def broken():
+            yield reply("Part one. ")
+            raise SDKError(503, "UNAVAILABLE")
+
+        self.stream(client).return_value = broken()
+        got = []
+        with self.assertRaises(ExternalServiceError):
+            for piece in gemini.stream("x"):
+                got.append(piece)
+        self.assertEqual(got, ["Part one. "])
+        self.assertEqual(self.stream(client).call_count, 1)

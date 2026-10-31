@@ -84,6 +84,70 @@ async function request(path, { method = "GET", json, form, auth = true, retry = 
   return body;
 }
 
+// ---- streamed answers (AI text that appears while it is still being written) ---------------------------------
+class StreamUnsupported extends Error {}
+
+function parseEvent(block) {
+  let name = "message", data = "";
+  for (const line of block.split("\n")) {
+    if (line.startsWith("event:")) name = line.slice(6).trim();
+    else if (line.startsWith("data:")) data += line.slice(5).trim();
+  }
+  if (!data) return null;   // a ":" comment line (the server's "stream open" flush) has no data
+  try { return { name, data: JSON.parse(data) }; } catch { return null; }
+}
+
+/** POST, then read the Server-Sent Events answer piece by piece. Resolves with the whole text. */
+async function streamPost(path, json, onChunk, retry = true) {
+  const headers = { "Content-Type": "application/json" };
+  const token = getTokens()?.access;
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await fetch(`${CONFIG.API_BASE}${path}`, { method: "POST", headers, body: JSON.stringify(json) });   // a network failure throws TypeError
+  if (res.status === 401) {
+    if (retry && (await refreshAccess())) return streamPost(path, json, onChunk, false);
+    expireSession();
+    throw new ApiError("Your session has ended. Please sign in again.", 401);
+  }
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new ApiError(readableError(body, res.status), res.status, body);
+  }
+  if (!res.body?.getReader) throw new StreamUnsupported();
+  const reader = res.body.getReader(), decoder = new TextDecoder();
+  let buffer = "", full = "";
+  for (;;) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+    let end;
+    while ((end = buffer.indexOf("\n\n")) >= 0) {
+      const event = parseEvent(buffer.slice(0, end));
+      buffer = buffer.slice(end + 2);
+      if (!event) continue;
+      if (event.name === "chunk") { full += event.data.t; onChunk(event.data.t); }
+      else if (event.name === "done") return event.data.text ?? full;
+      else if (event.name === "error") throw new ApiError(event.data.detail || "The AI advisor failed to respond.", 502, event.data);
+    }
+  }
+  if (!full) throw new StreamUnsupported();   // closed with no answer at all
+  return full;                                // closed without "done": the text that arrived is the answer
+}
+
+/**
+ * Try the streaming endpoint; if streaming cannot work (old browser, a proxy that holds data back, the server still waking
+ * up) before any text has arrived, quietly use the normal endpoint instead. A real error from the app is never retried.
+ */
+async function streamOrFallback(path, json, onChunk, fallback) {
+  let got = false;
+  try {
+    return await streamPost(path, json, (piece) => { got = true; onChunk(piece); });
+  } catch (err) {
+    if (got) throw err;
+    if (err instanceof ApiError && !isWaking(err.status, err.details)) throw err;
+    return fallback();
+  }
+}
+
 /** Multipart upload with real progress events (fetch cannot report upload progress). */
 function upload(path, form, onProgress, retry = true, attempt = 0) {
   return new Promise((resolve, reject) => {
@@ -124,6 +188,13 @@ const real = {
   deleteDetection: (id) => request(`/detections/${id}/`, { method: "DELETE" }),
   detectionAdvice: (id, language) => request(`/detections/${id}/advice/`, { method: "POST", json: { language } }),
   verifyDetection: (id, language) => request(`/detections/${id}/verify/`, { method: "POST", json: { language } }),
+
+  // Same answers as assistantChat / detectionAdvice, but the text arrives piece by piece through onChunk and the
+  // promise resolves with the whole text. If streaming is unavailable the whole text is returned without any onChunk calls.
+  assistantStream: (messages, language, context, onChunk) => streamOrFallback("/assistant/chat/stream/", { messages, language, context }, onChunk,
+    async () => (await real.assistantChat(messages, language, context)).reply),
+  adviceStream: (id, language, onChunk) => streamOrFallback(`/detections/${id}/advice/stream/`, { language }, onChunk,
+    async () => (await real.detectionAdvice(id, language)).advice),
 
   weather: (city) => request(`/advisory/weather/?city=${encodeURIComponent(city)}`),
   advisory: (city, language) => request("/advisory/", { method: "POST", json: { city, language } }),

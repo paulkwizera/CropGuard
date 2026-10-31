@@ -59,6 +59,8 @@
   <link rel="modulepreload" href="js/components/toast.js">
   <link rel="modulepreload" href="js/components/forms.js">
   <link rel="modulepreload" href="js/components/checks.js">
+  <link rel="modulepreload" href="js/components/activity.js">
+  <link rel="modulepreload" href="js/components/stream.js">
 </head>
 <body class="app" data-page="detect">
   <a class="skip-link" href="#main">Skip to main content</a>
@@ -111,6 +113,7 @@
             <div class="busy-info" role="status" aria-live="polite">
               <p class="busy-title" id="busy-title">Uploading photo…</p>
               <div class="progress" id="progress"><span></span></div>
+              <ol id="activity" aria-label="What CropGuard is doing"></ol>
             </div>
           </div>
 
@@ -131,6 +134,7 @@
                     <div class="field"><label for="advice-lang">Language</label><select class="select" id="advice-lang"></select></div>
                     <button class="btn" id="advice-btn" type="button"><svg class="icon" aria-hidden="true"><use href="#i-sparkle"/></svg><span>Get advice</span></button>
                   </div>
+                  <ol id="advice-activity" aria-label="What the AI advisor is doing"></ol>
                   <div id="advice-out" class="prose-ai advice-out" aria-live="polite" hidden></div>
                   <button class="btn btn--sm btn--secondary" id="copy-advice" type="button" hidden><svg class="icon icon--sm" aria-hidden="true"><use href="#i-copy"/></svg>Copy advice</button>
                 </div>

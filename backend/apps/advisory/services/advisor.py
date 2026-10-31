@@ -54,8 +54,8 @@ Instructions:
     return _cached(key, _WEATHER_TTL, lambda: _generate(prompt, "weather advice"))
 
 
-def disease_advice(disease: str, language: str = "rw", crop: str = "maize") -> str:
-    prompt = f"""
+def _disease_prompt(disease: str, language: str, crop: str) -> str:
+    return f"""
 You are an expert agronomist helping smallholder {crop} farmers in Rwanda.
 A detection model found this {crop} problem: "{disease}".
 
@@ -65,7 +65,25 @@ If a pesticide is mentioned, tell the farmer to follow the product label and ask
 agronomist or agro-dealer for the right product and dose; do not invent exact doses.
 Write the entire answer in {LANGUAGE_NAMES.get(language, 'English')}. Keep it under 200 words.
 """
+
+
+def disease_advice(disease: str, language: str = "rw", crop: str = "maize") -> str:
+    prompt = _disease_prompt(disease, language, crop)
     return _cached(("disease", crop, disease, language), _ADVICE_TTL, lambda: _generate(prompt, "treatment advice"))
+
+
+def disease_advice_stream(disease: str, language: str = "rw", crop: str = "maize"):
+    """Same advice, yielded piece by piece while Gemini writes it. A repeat question is answered at once from memory."""
+    key = ("disease", crop, disease, language)
+    hit = _CACHE.get(key)
+    if hit and time.time() - hit[0] < _ADVICE_TTL:
+        yield hit[1]
+        return
+    parts = []
+    for piece in gemini.stream(_disease_prompt(disease, language, crop), max_tokens=1500, label="treatment advice"):
+        parts.append(piece)
+        yield piece
+    _cached(key, _ADVICE_TTL, lambda: "".join(parts))   # remember it for the next farmer
 
 
 # --------------------------------------------------------------------------------------

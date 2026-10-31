@@ -61,3 +61,10 @@ def chat(messages: list[dict], language: str = "rw", context: dict | None = None
     return gemini.generate(
         build_contents(messages), system=system_prompt(language, context), max_tokens=2048, label="assistant",
     )
+
+
+def chat_stream(messages: list[dict], language: str = "rw", context: dict | None = None):
+    """Same answer as chat(), but yielded piece by piece while Gemini writes it."""
+    return gemini.stream(
+        build_contents(messages), system=system_prompt(language, context), max_tokens=2048, label="assistant",
+    )

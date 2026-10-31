@@ -4,6 +4,7 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 
 from apps.advisory.services import advisor
+from apps.core import streaming
 from apps.core.exceptions import ServiceUnavailable
 
 from . import crops
@@ -28,7 +29,7 @@ class DetectionViewSet(
     # Only the expensive actions are limited (a photo check runs the model, advice calls Gemini);
     # listing, viewing and deleting checks are not.
     throttle_classes = [ScopedRateThrottle]
-    THROTTLE_SCOPES = {"create": "upload", "advice": "ai", "verify": "verify"}
+    THROTTLE_SCOPES = {"create": "upload", "advice": "ai", "advice_stream": "ai", "verify": "verify"}
 
     def get_throttles(self):
         self.throttle_scope = self.THROTTLE_SCOPES.get(self.action)  # None = no limit for this action
@@ -107,6 +108,16 @@ class DetectionViewSet(
         detection.verification = {**gemini, "resolution": outcome["resolution"]}
         detection.save()
 
+    @staticmethod
+    def _advice_subject(detection) -> str:
+        """What to ask the advisor about: the disease name, plus Gemini's notes when the detector never knew this problem."""
+        disease = detection.top_label
+        seen = detection.verification or {}
+        gemini_named_it = seen.get("condition") == advisor.OTHER_PROBLEM and (seen.get("resolution") or {}).get("winner") == "gemini"
+        if gemini_named_it and seen.get("explanation"):
+            disease = f"{disease}. What a close look at the photo showed: {seen['explanation'][:300]}"
+        return disease
+
     @action(detail=True, methods=["post"])
     def advice(self, request, pk=None):
         """Ask the AI for treatment advice about the top disease of this detection."""
@@ -115,11 +126,22 @@ class DetectionViewSet(
             return Response({"detail": "Nothing was detected in this image."}, status=status.HTTP_400_BAD_REQUEST)
         body = AdviceRequestSerializer(data=request.data)
         body.is_valid(raise_exception=True)
-        disease = detection.top_label
-        seen = detection.verification or {}
-        gemini_named_it = seen.get("condition") == advisor.OTHER_PROBLEM and (seen.get("resolution") or {}).get("winner") == "gemini"
-        if gemini_named_it and seen.get("explanation"):  # the detector never knew this problem: give the AI what Gemini saw
-            disease = f"{disease}. What a close look at the photo showed: {seen['explanation'][:300]}"
-        detection.advice = advisor.disease_advice(disease, body.validated_data["language"], crop=detection.crop)
+        detection.advice = advisor.disease_advice(self._advice_subject(detection), body.validated_data["language"], crop=detection.crop)
         detection.save(update_fields=["advice"])
         return Response(self.get_serializer(detection).data)
+
+    @action(detail=True, methods=["post"], url_path="advice/stream")
+    def advice_stream(self, request, pk=None):
+        """Same advice, streamed to the page piece by piece (see apps.core.streaming). The full text is saved at the end."""
+        detection = self.get_object()
+        if detection.status != "disease":
+            return Response({"detail": "Nothing was detected in this image."}, status=status.HTTP_400_BAD_REQUEST)
+        body = AdviceRequestSerializer(data=request.data)
+        body.is_valid(raise_exception=True)
+
+        def save(text):
+            detection.advice = text
+            detection.save(update_fields=["advice"])
+
+        pieces = advisor.disease_advice_stream(self._advice_subject(detection), body.validated_data["language"], crop=detection.crop)
+        return streaming.response(streaming.text_events(pieces, on_done=save))

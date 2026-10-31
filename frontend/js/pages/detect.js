@@ -8,6 +8,8 @@ import { toast } from "../components/toast.js";
 import { setBusy } from "../components/forms.js";
 import { confidenceBlock, cropName, isHealthy, isOther } from "../components/checks.js";
 import { adviceLang, t } from "../i18n.js";
+import { createActivity } from "../components/activity.js";
+import { partialHtml, smoothWriter } from "../components/stream.js";
 
 if (requireAuth()) init();
 
@@ -92,31 +94,45 @@ function init() {
     bar.classList.remove("is-indeterminate");
     bar.firstElementChild.style.width = "0%";
     $("busy-title").textContent = "Uploading photo…";
+    activity.clear();
+    activity.step("Uploading photo…");
     show("busy");
     requested = crop;
     try {
       current = await api.createDetection(file, (p) => {
         bar.firstElementChild.style.width = `${Math.round(p * 100)}%`;
-        if (p >= 1) { $("busy-title").textContent = "Checking the leaf…"; bar.classList.add("is-indeterminate"); }
+        if (p >= 1) { stage("leaf"); bar.classList.add("is-indeterminate"); }
       }, crop);
       // Gemini double-checks the photo and the server picks ONE final answer (see services/decision.py). We wait for it
       // so the result never flips from one answer to another on screen. If Gemini is unavailable, the detector's own
       // answer is shown on its own.
-      $("busy-title").textContent = "Double-checking with Gemini…";
+      stage("gemini");
       verifyError = "";
       try { current = await api.verifyDetection(current.id, $("advice-lang").value); } catch (err) { verifyError = err.message || ""; /* keep the detector's answer */ }
+      activity.step("Deciding the final answer…");
       await renderResult(current);
+      activity.clear();
     } catch (err) {
+      activity.clear();
       $("error-text").textContent = err.message;
       show("error");
       $("retry-btn").focus();
     }
   }
+  // What is happening right now, as a live list (each line is a real stage; see components/activity.js)
+  const activity = createActivity($("activity"));
+  const STAGE = {
+    leaf: ["Checking the leaf…", ["Scanning the leaf", "Looking for streaks and spots"]],
+    gemini: ["Double-checking with Gemini…", ["Reading the same photo", "Comparing with the detector's answer", "Weighing how sure each one is"]],
+  };
+  const stage = (key) => { const [title, hints] = STAGE[key]; $("busy-title").textContent = title; activity.step(title, hints); };
+
   // api.js retries quietly while Render wakes the sleeping server: tell the farmer instead of showing a red error
   window.addEventListener("cropguard:waking", () => {
     if ($("stage-busy").hidden) return;
     $("busy-title").textContent = "Waking up the server, this can take up to a minute…";
     $("progress").classList.add("is-indeterminate");
+    activity.step("Waking up the server…", ["Free hosting sleeps when unused, so this can take up to a minute."]);
   });
   $("analyze-btn").addEventListener("click", analyze);
   $("retry-btn").addEventListener("click", analyze);
@@ -252,17 +268,35 @@ function init() {
     show("result", "advice");
   }
 
+  // Treatment advice appears while the AI is still writing it (api.adviceStream), after a short live "what is happening" list.
+  const adviceActivity = createActivity($("advice-activity"));
   $("advice-btn").addEventListener("click", async () => {
-    const btn = $("advice-btn");
+    const btn = $("advice-btn"), out = $("advice-out");
     setBusy(btn, true);
+    out.hidden = true; out.innerHTML = ""; $("copy-advice").hidden = true;
+    adviceActivity.clear();
+    adviceActivity.step("Asking the AI advisor…", ["Reading the problem", "Choosing affordable treatment options", "Writing in your language"]);
+    const writer = smoothWriter((shown) => { out.innerHTML = partialHtml(shown); });
+    let started = false;
     try {
-      const updated = await api.detectionAdvice(current.id, $("advice-lang").value);
-      current = updated;
-      showAdvice(updated.advice);
-      $("advice-out").scrollIntoView({ block: "nearest", behavior: "smooth" });
+      const full = await api.adviceStream(current.id, $("advice-lang").value, (piece) => {
+        if (!started) {   // the first words are here: the activity list has done its job
+          started = true;
+          adviceActivity.clear();
+          out.hidden = false; out.classList.add("is-streaming");
+          out.scrollIntoView({ block: "nearest", behavior: "smooth" });
+        }
+        writer.push(piece);
+      });
+      if (!started) { adviceActivity.clear(); out.hidden = false; out.classList.add("is-streaming"); }   // streaming was unavailable: the whole text arrived at once
+      await writer.finish(full);
+      current = { ...current, advice: full };
+      showAdvice(full);
     } catch (err) {
+      adviceActivity.clear();
       toast(err.message, "error");
     } finally {
+      out.classList.remove("is-streaming");
       setBusy(btn, false);
     }
   });

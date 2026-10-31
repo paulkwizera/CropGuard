@@ -144,6 +144,17 @@ def _record(ok: bool, model: str, kind: str = "", message: str = "", ms: int = 0
     _state["last"] = {"ok": ok, "model": model, "kind": kind, "message": message[:300], "ms": ms, "at": time.time()}
 
 
+def _after_failure(kind: str, tuned: bool, attempts: int) -> str:
+    """What to do after a failed attempt on one model: stop / plain / retry / next."""
+    if kind == "auth":                       # no other model can fix a bad key
+        return "stop"
+    if kind == "bad_request" and tuned:      # e.g. this model refuses thinking_level: retry it with the plain config
+        return "plain"
+    if kind in ("busy", "timeout", "network") and attempts == 1:   # worth one more go on the same model
+        return "retry"
+    return "next"                            # quota / model missing / still failing: try the next model
+
+
 # ---------------------------------------------------------------------------------------------
 # the call
 # ---------------------------------------------------------------------------------------------
@@ -182,19 +193,84 @@ def generate(contents, *, system=None, json_output=False, max_tokens=1500, label
             _record(False, model, kind, technical, ms)
             log.warning("%s failed: model=%s kind=%s after %d ms: %s", label, model, kind, ms, technical[:400])
 
-            if kind == "auth":          # no other model can fix a bad key: stop now and say so
+            step = _after_failure(kind, tuned, attempts)
+            if step == "stop":
                 raise _fail("auth")
-            if kind == "bad_request" and tuned:   # e.g. this model refuses thinking_level: retry it with the plain config
+            if step == "plain":
                 tuned = False
                 continue
-            if kind in ("busy", "timeout", "network") and attempts == 1:   # worth one more go on the same model
+            if step == "retry":
                 time.sleep(0.6)
                 continue
-            break                       # quota / model missing / still failing: try the next model
+            break
 
     kinds = [k for k, _ in problems]
     kind = next((k for k in _PRIORITY if k in kinds), "unknown")
     log.error("%s gave up after %d failed attempt(s): %s", label, len(problems), "; ".join(f"{k}: {t[:120]}" for k, t in problems))
+    raise _fail(kind)
+
+
+def stream(contents, *, system=None, max_tokens=1500, label="gemini"):
+    """Like generate(), but YIELDS the answer piece by piece while Gemini is still writing it.
+
+    A failure before the first piece gets the same retries and fallback models as generate(). Once a piece has been
+    sent the page already shows part of the answer and nothing can be switched, so a failure then raises.
+    """
+    if not api_key():
+        raise _fail("not_configured")
+    from google.genai import types
+
+    client = _get_client()
+    deadline = time.monotonic() + float(getattr(settings, "GEMINI_BUDGET", 45))
+    problems: list[tuple[str, str]] = []
+
+    for model in models():
+        tuned, attempts = True, 0
+        while attempts < 3 and time.monotonic() < deadline:
+            attempts += 1
+            started = time.monotonic()
+            sent = False
+            try:
+                for piece in client.models.generate_content_stream(
+                    model=model, contents=contents,
+                    config=_config(types, system=system, json_output=False, max_tokens=max_tokens, tuned=tuned),
+                ):
+                    text = getattr(piece, "text", None) or ""
+                    if text:
+                        sent = True
+                        yield text
+                ms = int((time.monotonic() - started) * 1000)
+                if sent:
+                    _state["preferred"] = model
+                    _record(True, model, ms=ms)
+                    log.info("%s streamed ok: model=%s %d ms", label, model, ms)
+                    return
+                kind, technical = "empty", "empty answer (blocked or out of tokens)"
+            except Exception as exc:
+                kind, technical = classify(exc), f"{exc.__class__.__name__}: {exc}"
+                if sent:   # too late to switch models: the page already shows part of the answer
+                    _record(False, model, kind, technical, int((time.monotonic() - started) * 1000))
+                    log.warning("%s stream broke part-way: model=%s kind=%s: %s", label, model, kind, technical[:400])
+                    raise _fail(kind) from exc
+            ms = int((time.monotonic() - started) * 1000)
+            problems.append((kind, technical))
+            _record(False, model, kind, technical, ms)
+            log.warning("%s stream failed: model=%s kind=%s after %d ms: %s", label, model, kind, ms, technical[:400])
+
+            step = _after_failure(kind, tuned, attempts)
+            if step == "stop":
+                raise _fail("auth")
+            if step == "plain":
+                tuned = False
+                continue
+            if step == "retry":
+                time.sleep(0.6)
+                continue
+            break
+
+    kinds = [k for k, _ in problems]
+    kind = next((k for k in _PRIORITY if k in kinds), "unknown")
+    log.error("%s stream gave up after %d failed attempt(s): %s", label, len(problems), "; ".join(f"{k}: {t[:120]}" for k, t in problems))
     raise _fail(kind)
 
 
