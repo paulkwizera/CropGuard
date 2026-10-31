@@ -4,6 +4,8 @@ YOLOv8 inference wrapper (one model per crop).
 Each model is loaded once, on first use, so Django starts fast and `manage.py check/test`
 work even if ultralytics/torch is not installed.
 """
+import gc
+import threading
 from functools import lru_cache
 
 from django.conf import settings
@@ -11,6 +13,12 @@ from django.conf import settings
 from apps.core.exceptions import ServiceUnavailable
 
 from .. import crops
+
+
+# Only ONE photo goes through PyTorch at a time. Each running inference needs tens of MB of working memory, so with
+# 4 server threads and 4 farmers at once a 512 MB free instance runs out and Render restarts it. The CPU is the
+# bottleneck anyway, so waiting in line is no slower. (Gemini calls are not behind this lock: they only wait on the network.)
+_inference_lock = threading.Lock()
 
 
 @lru_cache(maxsize=4)
@@ -41,10 +49,12 @@ def predict(image_path, crop: str, conf: float | None = None) -> dict:
     sorted by confidence (highest first). `results` is empty when nothing passes the threshold.
     """
     model = get_model(crop)
-    result = model.predict(
-        source=str(image_path), conf=conf if conf is not None else settings.YOLO_CONF,
-        imgsz=settings.YOLO_IMGSZ, verbose=False,
-    )[0]
+    with _inference_lock:
+        result = model.predict(
+            source=str(image_path), conf=conf if conf is not None else settings.YOLO_CONF,
+            imgsz=settings.YOLO_IMGSZ, verbose=False,
+        )[0]
+        gc.collect()   # hand the working memory back before the next photo
     height, width = result.orig_shape
     found = []
     for box in result.boxes:

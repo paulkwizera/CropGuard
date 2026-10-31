@@ -83,7 +83,8 @@ No environment variables. If the backend's address ever changes, edit `LIVE_API`
 | Deploy fails: `ImproperlyConfigured: Set DJANGO_SECRET_KEY` | Add `DJANGO_SECRET_KEY` (step 2). |
 | Build fails: `libGL.so.1` | The Build Command must be `bash backend/build.sh` (it installs the headless OpenCV). |
 | "Out of memory" / the service restarts when checking a plant | Upgrade to Standard (2 GB). |
-| Result appears but never the second opinion, log says GOOGLE_API_KEY | Add `GOOGLE_API_KEY`. The detector's answer is still shown meanwhile. |
+| Second opinion / Get advice / Ask the AI / Weather advice fail | Open `https://cropguarv1.onrender.com/api/health/ai/`: it makes one real Gemini call and says what is wrong (missing key, rejected key, model name, quota, ...). The Render **Logs** tab also shows a line `gemini failed: model=... kind=...` for every failed call. Then fix `GOOGLE_API_KEY` / `GEMINI_MODEL` in the Environment tab (no quotes, no spaces) and the service restarts by itself. |
+| `kind=auth` in the logs, or "AI service rejected its API key" | The key is wrong, restricted or the Generative Language API is off for its project. Create a new key at <https://aistudio.google.com/apikey>, paste it on Render, and make sure `google-genai>=2.33` is installed (new `AQ.` keys need a recent SDK: use **Manual Deploy, Clear build cache & deploy**). |
 | Photos vanish after a deploy | Attach a disk and set `MEDIA_ROOT` (see above). |
 | Health says `mongodb: unreachable` | Atlas Network Access must allow `0.0.0.0/0`; check the user and password in `MONGODB_URI`. |
 | Detection fails with "model file missing" | `ml/weights/best.pt` and `cassava.pt` must be committed (they are tracked in git). |

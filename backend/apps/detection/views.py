@@ -9,7 +9,7 @@ from apps.core.exceptions import ServiceUnavailable
 from . import crops
 from .models import Detection
 from .serializers import AdviceRequestSerializer, DetectionSerializer
-from .services import decision, yolo
+from .services import decision, imaging, yolo
 from .services.decision import summarize  # noqa: F401  (kept importable from here)
 
 
@@ -44,6 +44,7 @@ class DetectionViewSet(
             raise ServiceUnavailable(f"The {crop} detector is not available yet.")
         # In auto mode the real crop is only known after the photo has been analysed.
         detection = serializer.save(user=self.request.user, crop="maize" if auto else crop)
+        imaging.shrink_in_place(detection.image.path)   # smaller photo = far less memory on a free server
         try:
             if auto:
                 outcome = yolo.predict_auto(detection.image.path)

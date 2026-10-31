@@ -21,6 +21,7 @@ function init() {
   let preview = null;   // object URL for the preview
   let current = null;   // detection returned by the API
   let adviceText = "";
+  let verifyError = ""; // why the last Gemini second opinion failed (shown to the farmer, with a retry button)
   let crop = "auto";    // which detector to use: "auto" (the server tells maize from cassava) or a crop id
   let requested = crop; // what was asked for on the last check (so the result can say "recognised as ...")
 
@@ -102,7 +103,8 @@ function init() {
       // so the result never flips from one answer to another on screen. If Gemini is unavailable, the detector's own
       // answer is shown on its own.
       $("busy-title").textContent = "Double-checking with Gemini…";
-      try { current = await api.verifyDetection(current.id, $("advice-lang").value); } catch { /* keep the detector's answer */ }
+      verifyError = "";
+      try { current = await api.verifyDetection(current.id, $("advice-lang").value); } catch (err) { verifyError = err.message || ""; /* keep the detector's answer */ }
       await renderResult(current);
     } catch (err) {
       $("error-text").textContent = err.message;
@@ -163,6 +165,22 @@ function init() {
     if (d.advice) showAdvice(d.advice);
   }
 
+  // Ask Gemini again for the photo that is already on screen (the detector's answer stays until Gemini replies).
+  async function retryVerify() {
+    const btn = $("verify-retry");
+    setBusy(btn, true);
+    try {
+      verifyError = "";
+      current = await api.verifyDetection(current.id, $("advice-lang").value);
+      await renderResult(current);
+      toast("Gemini double-checked this photo.");
+    } catch (err) {
+      verifyError = err.message || "";
+      renderVerification(current);
+      toast(err.message, "error");
+    }
+  }
+
   // ---- how the final answer was chosen. The detector and Gemini each looked at the photo; the server picked one
   // (resolution.winner) and already stored it as the result above. This card says who decided, and why.
   const BASIS = {
@@ -179,7 +197,10 @@ function init() {
     box.hidden = isOther(d);
     if (isOther(d)) return;
     if (!r) {   // Gemini did not answer (no key, slow, offline)
-      box.innerHTML = `<h3>Second opinion</h3><p class="muted">Gemini could not double-check this photo, so this is the detector's answer on its own.</p>`;
+      box.innerHTML = `<h3>Second opinion</h3><p class="muted">Gemini could not double-check this photo, so this is the detector's answer on its own.</p>
+        ${verifyError ? `<p class="verify-why">${escapeHtml(verifyError)}</p>` : ""}
+        <button class="btn btn--sm btn--secondary" id="verify-retry" type="button">${icon("refresh", "icon--sm")}Try the second opinion again</button>`;
+      $("verify-retry").addEventListener("click", retryVerify);
       return;
     }
     const meta = BASIS[r.basis] || BASIS.unconfirmed;

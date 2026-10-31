@@ -17,6 +17,11 @@ timeout = 180
 graceful_timeout = 30
 keepalive = 5
 
+# Restart the worker after a few hundred requests: PyTorch slowly keeps memory, and a planned restart is invisible
+# (the next check just takes a few seconds longer) while Render's out-of-memory restart drops everyone's request.
+max_requests = int(os.getenv("GUNICORN_MAX_REQUESTS", "300"))
+max_requests_jitter = 50
+
 accesslog = "-"   # Render's Logs tab shows what is printed
 errorlog = "-"
 

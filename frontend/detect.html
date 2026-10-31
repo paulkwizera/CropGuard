@@ -9,18 +9,26 @@
   <script>try{var l=localStorage.getItem("cropguard.lang");if(l&&l!=="en"){document.documentElement.classList.add("i18n-pending");setTimeout(function(){document.documentElement.classList.remove("i18n-pending")},2500)}}catch(e){}</script>
   <style>.i18n-pending body{visibility:hidden}</style>
   <script>
-  /* If the page's scripts cannot start (for example the file was opened by double-clicking it), explain what to do. */
+  /* Start-up watchdog. A slow connection is NOT an error, so: it waits 20 s, it removes itself the moment the page
+     does start, and it speaks up at once only if a script really failed to load or crashed. */
   (function () {
-    var onFile = location.protocol === "file:";
-    setTimeout(function () {
-      if (document.documentElement.getAttribute("data-ready")) return;
-      var d = document.createElement("div");
-      d.className = "boot-warning"; d.setAttribute("role", "alert");
-      d.innerHTML = onFile
+    var onFile = location.protocol === "file:", box = null, crashed = false;
+    var ready = function () { return document.documentElement.getAttribute("data-ready"); };
+    function show() {
+      if (ready() || box) return;
+      box = document.createElement("div"); box.className = "boot-warning"; box.setAttribute("role", "alert");
+      box.innerHTML = onFile
         ? "<strong>Open CropGuard through a small web server, not by double-clicking the file.</strong><p>Browsers block the page scripts on file:// addresses. Double-click <code>run-frontend.bat</code> (Windows) or run <code>./run-frontend.sh</code> in the project folder, or in the <code>frontend</code> folder run <code>python -m http.server 5500</code> and open <code>http://127.0.0.1:5500</code>.</p>"
-        : "<strong>This page did not start.</strong><p>Press Ctrl+Shift+R to reload. If it still looks wrong, open the browser console (F12) and check for a red error message; also make sure every file from the <code>frontend</code> folder was copied.</p>";
-      (document.body || document.documentElement).appendChild(d);
-    }, onFile ? 500 : 4000);
+        : crashed
+          ? "<strong>This page hit a problem while starting.</strong><p>Press Ctrl+Shift+R to reload. If it still looks wrong, open the browser console (F12) and look for a red error message.</p>"
+          : "<strong>This page is taking a while to start.</strong><p>Your connection may be slow. Please wait a little, or press Ctrl+Shift+R to reload.</p>";
+      (document.body || document.documentElement).appendChild(box);
+    }
+    var failed = function () { crashed = true; setTimeout(show, 1500); };
+    window.addEventListener("error", function (e) { if (!ready() && (e.target && e.target.tagName === "SCRIPT" || e.message)) failed(); }, true);
+    window.addEventListener("unhandledrejection", function () { if (!ready()) failed(); });
+    setInterval(function () { if (box && ready()) { box.remove(); box = null; } }, 500);   // the page did start after all
+    setTimeout(show, onFile ? 500 : 20000);
   })();
   </script>
   <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
@@ -33,6 +41,24 @@
   <link rel="stylesheet" href="css/pages.css">
   <link rel="stylesheet" href="css/story.css">
   <link rel="stylesheet" href="css/polish.css">
+  <link rel="modulepreload" href="js/pages/detect.js">
+  <link rel="modulepreload" href="js/api.js">
+  <link rel="modulepreload" href="js/config.js">
+  <link rel="modulepreload" href="js/auth.js">
+  <link rel="modulepreload" href="js/mock.js">
+  <link rel="modulepreload" href="js/components/shell.js">
+  <link rel="modulepreload" href="js/components/icons.js">
+  <link rel="modulepreload" href="js/session.js">
+  <link rel="modulepreload" href="js/components/format.js">
+  <link rel="modulepreload" href="js/i18n.js">
+  <link rel="modulepreload" href="js/i18n/rw.js">
+  <link rel="modulepreload" href="js/i18n/fr.js">
+  <link rel="modulepreload" href="js/components/dialog.js">
+  <link rel="modulepreload" href="js/components/lang-ui.js">
+  <link rel="modulepreload" href="js/components/image.js">
+  <link rel="modulepreload" href="js/components/toast.js">
+  <link rel="modulepreload" href="js/components/forms.js">
+  <link rel="modulepreload" href="js/components/checks.js">
 </head>
 <body class="app" data-page="detect">
   <a class="skip-link" href="#main">Skip to main content</a>
